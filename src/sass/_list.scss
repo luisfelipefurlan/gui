@@ -525,7 +525,7 @@ $status: #0c343d;
   color: #333;
   font-weight: bold;
   font-size: 100%;
-  padding: 0px 10px 0px 0px ;
+  padding: 0 .75rem;
 }
 
 .lst-entry .data {
@@ -784,11 +784,11 @@ $action-area-width: 200px;
 }
 
 .deviceMapCanvas {
-   height: 100%;
-   width: 100%;
+  height: calc(100% - 65px);
+  width: 100%;
 
-   .leaflet-container {
-     height: 100%;
-     width: 100%;
-   }
- }
+  .leaflet-container {
+    height: 100%;
+    width: 100%;
+  }
+}
