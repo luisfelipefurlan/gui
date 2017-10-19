@@ -173,7 +173,7 @@ class List extends Component {
 
     const showCanvas = 'deviceCanvas col s12 ' + hide;
     return (
-        <span className="bla">
+        <span className="list-of-devices">
       <div className="row device-list">
         <div className="col s12 main-title center-align">Devices</div>
         <div className="col s12 info-header">
