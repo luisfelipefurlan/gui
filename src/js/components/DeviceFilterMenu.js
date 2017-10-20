@@ -22,19 +22,20 @@ class ListItem extends Component {
   render() {
     let showOrHideDevice = this.state.click ? "fa fa-eye" : "fa fa-eye-slash";
     const name = this.props.device.label;
-    const attrValue = this.props.device.rssi ? this.props.device.rssi : "unknown"
 
     return (
-      <div className="lst-entry-title col s12" id={this.props.device.id} title="See details">
-        <div className="img col s3" id="img-chip">
-          <img src="images/chip.png" />
+
+        <div className="lst-entry-title col s12" id={this.props.device.id} title="See details">
+            <div className="img col s3" id="img-chip">
+              <img src="images/chip.png" />
+            </div>
+              <div className="user-label truncate col s6">{name}</div>
+              <div className="label col s6">RSSI 70%</div> {/*Fixed RSSI*/}
+              <div className="col s3 img" id="device-view">
+                <a className="" onClick={this.hideDevice}><i className={showOrHideDevice} aria-hidden="true"></i></a>
+              </div>
         </div>
-        <div className="user-label truncate col s6">{name}</div>
-        <div className="label col s6">RSSI {attrValue}</div>
-        <div className="col s3 img" id="device-view">
-          <a className="" onClick={this.hideDevice}><i className={showOrHideDevice} aria-hidden="true"></i></a>
-        </div>
-      </div>
+
     )
   }
 }
@@ -79,6 +80,7 @@ class ListRender extends Component {
     if (display_list.length > 0) {
       return (
         <div className="row">
+
             { display_list.map((device, idx) =>
               <ListItem device={device} key={device.id}
                 detail={device.id === this.state.detail}
@@ -124,6 +126,7 @@ class List extends Component {
     this.applyFiltering = this.applyFiltering.bind(this);
     this.hideDevices = this.hideDevices.bind(this);
     this.showDevices = this.showDevices.bind(this);
+    this.filterSidebar = this.filterSidebar.bind(this);
   }
 
   // TODO that should be done by the backend, not here.
@@ -147,15 +150,21 @@ class List extends Component {
   }
 
   hideDevices(event){
-    if (this.state.hide === false) {
-      this.setState({hide: !this.state.hide});
-    }
+      if (this.state.hide === false) {
+          this.setState({hide: !this.state.hide});
+      }
   }
 
   showDevices(event){
-    if (this.state.hide === true) {
-      this.setState({hide: !this.state.hide});
-    }
+      if (this.state.hide === true) {
+          this.setState({hide: !this.state.hide});
+      }
+  }
+
+  // TODO this belongs to parent component
+  filterSidebar(event){
+      this.props.callback(this.state.changeSidebar);
+      console.log("Filter");
   }
 
   render(){
@@ -164,30 +173,32 @@ class List extends Component {
 
     const showCanvas = 'deviceCanvas col s12 ' + hide;
     return (
-      <span className="list-of-devices">
-        <div className="row device-list">
-          <div className="col s12 main-title center-align">Devices</div>
-          <div className="col s12 info-header">
-            <div className= "col s1 subtitle">{filteredList.length}</div>
-            <div className= "col s5 title">Devices</div>
-            <div className="col s6 device-list-actions">
-              <div className="col s6 action-hide">
-                <a className="waves-effect waves-light" onClick={this.hideDevices}>HIDE ALL</a>
-              </div>
-              <div className="col s6 action-show">
-                <a className="waves-effect waves-light" onClick={this.showDevices}>SHOW ALL</a>
-              </div>
-            </div>
-          </div>
-          <div className={showCanvas}>
-            {(filteredList.length > 0) ? (
-              <ListRender devices={filteredList} loading={this.props.loading} deviceid={this.props.deviceid} />
-            ) : (
-              <div className="col s12 background-info">No configured devices</div>
-            )}
+        <span className="list-of-devices">
+      <div className="row device-list">
+        <div className="col s12 main-title center-align">Devices</div>
+        <div className="col s12 info-header">
+          <div className= "col s1 subtitle">{filteredList.length}</div>
+          <div className= "col s5 title">Devices</div>
+          <div className="col s6 device-list-actions">
+            <div className="col s6 action-hide"><a className="waves-effect waves-light" onClick={this.hideDevices}>HIDE ALL</a></div>
+            <div className="col s6 action-show"><a className="waves-effect waves-light" onClick={this.showDevices}>SHOW ALL</a></div>
           </div>
         </div>
-      </span>
+        <div className={showCanvas}>
+          {(filteredList.length > 0) ? (
+            <ListRender devices={filteredList} loading={this.props.loading} deviceid={this.props.deviceid} />
+          ) : (
+            <div className="col s12 background-info">No configured devices</div>
+          )}
+        </div>
+      </div>
+
+        <div className="device-footer col s12">
+          <div className="col s12 background-info">
+          <a className="waves-effect waves-light" onClick={this.filterSidebar}>FILTERING</a>
+  </div>
+  </div>
+        </span>
     )
   }
 }
@@ -304,91 +315,91 @@ class Filter extends Component {
     let isActiveTrat = this.state.isActiveTrat ? "active" : "";
     let isActiveCam = this.state.isActiveCam ? "active" : "";
 
-    return (
-      <div className="device-filtering">
-             <div className="filter-header">
-               <div className="label center-align">FILTERING</div>
-             </div>
-             <div className="filter-devices-info col s12">
-               <div className="protocol col s12">
-                 <div className="label">PROTOCOL</div>
+      return (
+          <div className="device-filtering">
+            <div className="filter-header">
+              <div className="label center-align">FILTERING</div>
+            </div>
+            <div className="filter-devices-info col s12">
+              <div className="protocol col s12">
+                <div className="label">PROTOCOL</div>
 
-                 <div className={"filter-btn col s6 " + isActiveMqtt} onClick={this.selectItemMqtt}>
-                   <div className="filter-label">MQTT</div>
-                 </div>
-                 <div className={"filter-btn col s6 " + isActiveVirtual} onClick={this.selectItemVirtual}>
-                   <div className="filter-label">Virtual</div>
-                 </div>
-               </div>
+                <div className={"filter-btn col s6 " + isActiveMqtt} onClick={this.selectItemMqtt}>
+                  <div className="filter-label">MQTT</div>
+                </div>
+                <div className={"filter-btn col s6 " + isActiveVirtual} onClick={this.selectItemVirtual}>
+                  <div className="filter-label">Virtual</div>
+                </div>
+              </div>
 
-               <div className="protocol col s12">
-                 <div className="label col s12">TYPE</div>
-                 <div className={"filter-btn col s4 " + isActiveCol} onClick={this.selectItemCol}>
-                   <div className="filter-label">Col</div>
-                 </div>
-                 <div className={"filter-btn col s4 " + isActiveTrat} onClick={this.selectItemTrat}>
-                   <div className="filter-label">Trat</div>
-                 </div>
-                 <div className={"filter-btn col s4 " + isActiveCam} onClick={this.selectItemCam}>
-                   <div className="filter-label">Cam</div>
-                 </div>
-               </div>
-             </div>
+              <div className="protocol col s12">
+                <div className="label col s12">TYPE</div>
+                <div className={"filter-btn col s4 " + isActiveCol} onClick={this.selectItemCol}>
+                  <div className="filter-label">Col</div>
+                </div>
+                <div className={"filter-btn col s4 " + isActiveTrat} onClick={this.selectItemTrat}>
+                  <div className="filter-label">Trat</div>
+                </div>
+                <div className={"filter-btn col s4 " + isActiveCam} onClick={this.selectItemCam}>
+                  <div className="filter-label">Cam</div>
+                </div>
+              </div>
+            </div>
 
-             <div className="filter-devices-search">
-               <div className="label center-align">SEARCH BY</div>
-               <form className="col s12 row" onSubmit={this.addFilter}>
-                 <div className="col s12">
-                   <div className="input-field col s5">
-                     <MaterialSelect id="attributes-select" name="attribute" value={this.state.attribute}
-                                     onChange={this.handleChangeAttribute}>
-                       <option value="Name">Name</option>
-                       <option value="ID">ID</option>
-                       <option value="Protocol">Protocol</option>
-                       <option value="Tags">Tags</option>
-                       <option value="Status">Status</option>
-                     </MaterialSelect>
-                     <label>Attribute</label>
-                   </div>
-                   <div className="input-field col s5">
-                     <input id="value" type="text" className="validate" name="value"
-                            value={this.state.value} onChange={this.handleChangeValue}/>
-                     <br/>
-                     <label>Value</label>
-                   </div>
-                   <div className="btn-plus col s2" onClick={this.addFilter}>
-                     <i className="fa fa-plus"></i>
-                   </div>
-                 </div>
-                   {click ? (
-                       <FieldSearchValues attribute={this.state.attribute} value={this.state.value}/>
-                   ) : (
-                       <div className="search-value col s12 offset-s1">
-                       </div>
-                   )}
-                 <div className="actions-buttons">
-                   <div className="col s6 button">
-                     <a className="waves-effect waves-light btn" id="btn-clear" tabIndex="-1"
-                        title="Clear" onClick={this.clearSearch}>
-                       Clear
-                     </a>
-                   </div>
+            <div className="filter-devices-search">
+              <div className="label center-align">SEARCH BY</div>
+              <form className="col s12 row" onSubmit={this.addFilter}>
+                <div className="col s12">
+                  <div className="input-field col s5">
+                    <MaterialSelect id="attributes-select" name="attribute" value={this.state.attribute}
+                                    onChange={this.handleChangeAttribute}>
+                      <option value="Name">Name</option>
+                      <option value="ID">ID</option>
+                      <option value="Protocol">Protocol</option>
+                      <option value="Tags">Tags</option>
+                      <option value="Status">Status</option>
+                    </MaterialSelect>
+                    <label>Attribute</label>
+                  </div>
+                  <div className="input-field col s5">
+                    <input id="value" type="text" className="validate" name="value"
+                           value={this.state.value} onChange={this.handleChangeValue}/>
+                    <br/>
+                    <label>Value</label>
+                  </div>
+                  <div className="btn-plus col s2" onClick={this.addFilter}>
+                    <i className="fa fa-plus"></i>
+                  </div>
+                </div>
+                  {click ? (
+                      <FieldSearchValues attribute={this.state.attribute} value={this.state.value}/>
+                  ) : (
+                      <div className="search-value col s12 offset-s1">
+                      </div>
+                  )}
+                <div className="actions-buttons">
+                  <div className="col s6 button">
+                    <a className="waves-effect waves-light btn" id="btn-clear" tabIndex="-1"
+                       title="Clear" onClick={this.clearSearch}>
+                      Clear
+                    </a>
+                  </div>
 
-                   <div className="col s6 button" type="submit">
-                     <a className="waves-effect waves-light btn" id="btn-search" tabIndex="-1"
-                        title="Search">
-                       <i className="clickable fa fa-search"/>
-                     </a>
-                   </div>
-                 </div>
-               </form>
-             </div>
+                  <div className="col s6 button" type="submit">
+                    <a className="waves-effect waves-light btn" id="btn-search" tabIndex="-1"
+                       title="Search">
+                      <i className="clickable fa fa-search"/>
+                    </a>
+                  </div>
+                </div>
+              </form>
+            </div>
 
-             {/* <div className="col s12 background-info" onClick={this.devicesSidebar}>
-               <a className="waves-effect waves-light">DEVICES</a>
-             </div> */}
+            <div className="col s12 background-info" onClick={this.devicesSidebar}>
+              <a className="waves-effect waves-light">DEVICES</a>
+            </div>
 
-           </div>
+          </div>
       )
   }
 }
@@ -396,65 +407,26 @@ class Filter extends Component {
 class SideBar extends Component {
   constructor(props){
     super(props);
-    this.state = {
-      click: false,
-      nextKey: "filtering",
-      sideBarOpened: false
-    };
+    this.state = {click: null}
 
-    this.toggleSideBar = this.toggleSideBar.bind(this);
     this.changeSideBar = this.changeSideBar.bind(this);
   }
 
-  toggleSideBar() {
-    const last = this.state.sideBarOpened;
-    console.log("toggleSideBar ",last);
-    this.setState({sideBarOpened: !last});
-  }
+  changeSideBar(callback){
+    if(callback){
+      this.setState({click: this.setState.click});
+    } else {
+      this.setState({click: !this.setState.click});
+    }
 
-  changeSideBar(e) {
-    e.preventDefault();
-    this.setState({
-      click: !this.state.click,
-      nextKey: (this.state.click ? "filtering" : "devices")
-    });
   }
 
   render(){
-    function Footer(props) {
-      return (
-        <div className="device-footer">
-          <div className="col s12 background-info" onClick={props.callback}>
-            <a className="waves-effect waves-light">{props.nextKey.toUpperCase()}</a>
-          </div>
-        </div>
-      )
+    if (this.state.click) {
+      return (<Filter devices={this.props.devices} callback={this.changeSideBar}/>);
+    } else {
+      return (<List devices={this.props.devices} callback={this.changeSideBar}/>);
     }
-
-    const btnSideBarClass = "fa fa-chevron-" + (this.state.sideBarOpened ? "right" : "left");
-    const divFilterList =  this.state.click ? (
-      <Filter devices={this.props.devices} callback={this.changeSideBar}/>
-    ) : (
-      <List devices={this.props.devices} callback={this.changeSideBar}/>
-    );
-
-    return (
-      <div className="col m12">
-        <div className={"col m12 div-btn-side-painel " + (this.state.sideBarOpened ? 'push-left' : 'no-left')}>
-          <button type="button" className='btn btn-circle sideBarToggle' onClick={this.toggleSideBar}>
-            <i className={btnSideBarClass} aria-hidden="true"></i>
-          </button>
-        </div>
-        { this.state.sideBarOpened ? (
-          <div className="col devicePainel full-height">
-            {divFilterList}
-            <Footer callback={this.changeSideBar} nextKey={this.state.nextKey} />
-          </div>
-        ) : (
-          null
-        )}
-      </div>
-    )
   }
 }
 

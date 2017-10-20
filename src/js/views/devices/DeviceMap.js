@@ -124,31 +124,7 @@ class PositionRenderer extends Component {
     }
 
     function getPinColor(p) {
-      if(p.sinr > 20){
-        return darkBluePin;
-      } else{
-        if(p.sinr > 15){
-          return lightBluePin;
-        } else {
-          if(p.sinr > 10){
-            return greyishBluePin;
-          } else {
-            if(p.sinr > 5){
-              return bluePin;
-            } else {
-              if(p.sinr > 2){
-                return orangePin;
-              } else {
-                if(p.sinr > -1){
-                  return redPin;
-                } else {
-                  return blackPin;
-                }
-              }
-            }
-          }
-        }
-      }
+      return darkBluePin;
     }
 
     let parsedEntries = this.props.devices.reduce((result, k) => {
@@ -162,14 +138,14 @@ class PositionRenderer extends Component {
     if (parsedEntries.length == 0) {
       return (<NoData />);
     }
-    // <div className="contextMenu--option">State : </div>
-    // <div className="contextMenu--separator" />
     const contextMenu = this.state.visible ? (
       <div ref={ref => {this.root = ref}} className="contextMenu">
+          <div className="contextMenu--option">State : </div>
+          <div className="contextMenu--separator" />
           <Link to={"/device/id/" + this.state.selected_device_id + "/detail"} title="View details">
-            <div className="contextMenu--option cmenu"><i className="fa fa-info-circle" />Details</div>
+            <div className="contextMenu--option"><i className="fa fa-fa-info-circle" />Details</div>
           </Link>
-          <div className="contextMenu--option cmenu" onClick={this._handleTracking}><img src='images/icons/location.png' />Tracking</div>
+          <div className="contextMenu--option"  onClick={this._handleTracking}><i className="fa fa-compass" />Tracking</div>
       </div>
     ) : null
 
@@ -213,9 +189,7 @@ class LayerBox extends Component {
     this.toggleLayer = this.toggleLayer.bind(this);
   }
 
-  toggleLayer(e) {
-    console.log('received event click? ',e);
-    //@TODO cancel click propagation
+  toggleLayer() {
     this.setState({visible:!this.state.visible});
   }
 
@@ -236,7 +210,7 @@ class LayerBox extends Component {
 
     return (
       <div className="col s12">
-        <div className=" layer-div" onClick={this.toggleLayer}>
+        <div className="layer-div" onClick={this.toggleLayer}>
           <img src='images/layers.png' />
         </div>
         {imageoverlay}
@@ -280,7 +254,9 @@ class DeviceMap extends Component {
         </SubHeader>
         <div className="deviceMapCanvas col m12 s12 relative">
           <PositionRenderer devices={filteredList} />
-          <SideBar devices={this.props.devices} />
+          <div className="col devicePainel">
+            <SideBar devices={this.props.devices} />
+          </div>
         </div>
       </div>
     )

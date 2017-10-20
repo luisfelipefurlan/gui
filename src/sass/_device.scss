@@ -1,3 +1,4 @@
+
 .toggle-icon
 {
   width: 17px;
@@ -5,12 +6,6 @@
   display: inline-block;
   margin: 0 3px;
   float:left;
-
-   i
-   {
-       font-size: 21px;
-   }
-
 
   img
   {
@@ -96,12 +91,12 @@
 }
 
 .list-of-devices{
-    float: left;
-    height: 100%;
-    width: 100%;
-   position: relative;
-   animation: fadein 200ms;
- }
+  float: left;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  animation: fadein 200ms;
+}
 
 .device-list{
   width: 100%;
@@ -109,15 +104,14 @@
   float: right;
   //border-left: 1px solid #BDBDBD;
   margin: 0;
-
   .main-title{
     font-family: 'Open Sans', sans-serif;
     font-weight: bold;
-    font-size: 15px;
+    font-size: 1.5em;
     text-align: center;
     letter-spacing: 0.39px;
     text-transform: uppercase;
-    padding: 16px 10px 10px 10px;
+    padding: 30px 10px 10px 10px;
     color: #DADADA;
   }
 
@@ -490,9 +484,9 @@
   display: inline-block;
   cursor: pointer;
   position: absolute;
-  right: 60px;
+  right: 20px;
   z-index: 450;
-  top:60px;
+  top:20px;
 
   img{
     width: 100%;
@@ -505,8 +499,7 @@
 .icon-marker {
   padding: 3px;
   margin: 0 auto;
-  border: 1px solid $white;
-  // box-shadow: 0 0 7px 6px lightgray;
+  box-shadow: 0 0 7px 6px lightgray;
   border-radius: 50%;
 }
 
@@ -549,32 +542,14 @@ h1, h2, p {
   margin: 0 auto;
 }
 
-.cmenu
-{
-  i{
-    position: absolute;
-    left: 10px;
-    font-size: 20px;
-  }
-
-  img{
-    width: 19px;
-    position: absolute;
-    left: 10px;
-    bottom: 11px;
-  }
-}
-
 .contextMenu {
   z-index: 410;
   position: fixed;
   background: white;
   box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
 
-
-
   &--option {
-    padding: 12px 70px 12px 40px;
+    padding: 12px 60px 12px 30px;
     cursor: default;
     color:#2c3e50;
     text-transform: uppercase;

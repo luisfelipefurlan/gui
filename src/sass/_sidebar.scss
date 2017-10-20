@@ -7,27 +7,27 @@
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 1010;
+  z-index: 1100;
   width: $sidebar-width-closed;
   height:100%;
   // height: calc(100% - #{$header-height});
   // margin-top: $header-height;
-  border-right: 1px solid #c1c1c1 !important;
+  //border-right: 1px solid #c1c1c1 !important;
   color: #fff;
   background-color: $sidebar-bg;
 
-    // li:hover a{
-    //     border:0px;
-    //
-    // }
-    // li:hover a:hover{
-    //     border:0px;
-    // }
+  // li:hover a{
+  //     border:0px;
+  //
+  // }
+  // li:hover a:hover{
+  //     border:0px;
+  // }
 
 
   .header {
     color: #ccc; // TODO add this to color scheme
-    height: 40px;
+    height: 43px;
     // height: $header-height;
 
     >span {
@@ -99,7 +99,8 @@
       i {
         position: absolute;
         right: 0;
-        width: 100%
+        width: 100%;
+        height: 100%;
       }
 
       i.material-icons {
