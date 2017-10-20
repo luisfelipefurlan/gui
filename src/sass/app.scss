@@ -32,6 +32,7 @@ $porcelain: #ecf0f1;
 $silver: #b8b8b8;
 $dark-silver: #848484;
 $black: #2c3e50;
+$light-gray: #F6F7FB;
 $default: rgba(0, 0, 0, 0.87);
 // sidebar control variables
 $sidebar-width: 220px;
@@ -48,6 +49,7 @@ $sidebar-desc-ff: 'Roboto', sans-serif;
 $sidebar-desc: #bfbfbf;
 
 // header control variables
+// $header-height: 77px;
 $header-height: 45px;
 $page-header-size: 65px;
 
@@ -57,6 +59,9 @@ $details-background-color: #f3f3f3;
 // $main-font-family: Montserrat, sans-serif;
 $main-font-family: Roboto, sans-serif;
 
+.bg-light-gray {
+  background-color: $light-gray;
+}
 
 .full-width {
   position: relative;
@@ -191,6 +196,12 @@ body {
   box-shadow: 0 3px 2px rgba(0,0,0,0.16), 0 3px 3px rgba(0,0,0,0.23);
   margin-bottom: 4px;
 }
+
+.box-shadow-2 {
+  margin-bottom: 4px;
+  box-shadow: 0px 7px 13px rgba(0, 0, 0, 0.25);
+}
+
 
 
 .bg-gray {

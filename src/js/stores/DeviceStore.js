@@ -1,5 +1,6 @@
 var alt = require('../alt');
 var DeviceActions = require('../actions/DeviceActions');
+var MeasureActions = require('../actions/MeasureActions');
 
 class DeviceStore {
   constructor() {
@@ -21,6 +22,9 @@ class DeviceStore {
       handleRemoveSingle: DeviceActions.REMOVE_SINGLE,
 
       handleFailure: DeviceActions.DEVICES_FAILED,
+
+      handleFetchPosition: MeasureActions.FETCH_POSITION,
+      handleUpdatePosition: MeasureActions.UPDATE_POSITION
     });
   }
 
@@ -34,6 +38,19 @@ class DeviceStore {
     }
 
     return "disabled"
+  }
+
+  handleFetchPosition() {}
+  handleUpdatePosition(data) {
+    if (data.device_id in this.devices) {
+      if (this.devices.hasOwnProperty(data.device_id)) {
+        for (let k in data) {
+          if ((k != "device_id") && (data.hasOwnProperty(k))) {
+            this.devices[data.device_id][k] = data[k];
+          }
+        }
+      }
+    }
   }
 
   handleUpdateSingle(device) {
