@@ -1,25 +1,9 @@
-
-
 // #16a085ff
 $online: #16a085;
 $offline: #f85252;
 $disabled: $silver;
 $entry-default: $default-blue;
 $status: #0c343d;
-
-.div-btn-side-painel
-{
-  position: absolute;
-  right: 20px;
-  top: 20px;
-  z-index: 10110;
-  // transition: all 1s;
-
-  &.push-left
-  {
-    right: 386px;
-  }
-}
 
 .lst-icon {
   width:  2.1em;
@@ -54,7 +38,6 @@ $status: #0c343d;
 }
 
 .lst-wrapper {
-  background: $light-gray;
   padding: 0 6% !important;
 }
 
@@ -188,9 +171,6 @@ $status: #0c343d;
       margin-right: 3%;
       height: 50px;
       width: 50px;
-      border-radius: 30px;
-      background: #fdfdfd;
-      overflow: hidden;
 
       > img {
         height: 50px;
@@ -214,8 +194,7 @@ $status: #0c343d;
 
     > .user-label {
       position: relative;
-      font-size: 125%;
-      padding-left: 14px;
+      font-size: 120%;
     }
 
     > .label {
@@ -226,7 +205,7 @@ $status: #0c343d;
     }
 
     > .badge {
-      color: $white;
+      color: $status;
       font-size: 80%;
       font-weight: bold;
       text-transform: uppercase;
@@ -243,10 +222,9 @@ $status: #0c343d;
     .metric {
       margin-top: 4%;
       border-right: $silver solid 1px;
-      text-align: left;
+      text-align: center;
 
       &.last {
-        text-align: right;
         border: none;
       }
 
@@ -547,7 +525,6 @@ $status: #0c343d;
   color: #333;
   font-weight: bold;
   font-size: 100%;
-  // padding: 0px 10px 0px 0px ;
   padding: 0 .75rem;
 }
 
@@ -705,10 +682,9 @@ $status: #0c343d;
 
 .background-info {
   color: $subtle;
-  font-size: 15px;
+  font-size: 200%;
   font-family: 'Cuprum', sans-serif;
   text-align: center;
-  padding: 5px;
 
   i.material-icons {
     font-size: 5em;
@@ -771,11 +747,10 @@ $status: #0c343d;
 .history-list {
   .value {
     font-size: 1.5em;
-    text-align: center;
   }
   .label {
     font-size: 0.75em;
-    text-align: center;
+    text-align: right;
   }
   .alt-row {
     background-color: $almost-white
@@ -809,12 +784,11 @@ $action-area-width: 200px;
 }
 
 .deviceMapCanvas {
-   height: calc(100% - 65px);
-   width: 100%;
-   background-color: $light-gray;
+  height: calc(100% - 65px);
+  width: 100%;
 
-   .leaflet-container {
-     height: 100%;
-     width: 100%;
-   }
- }
+  .leaflet-container {
+    height: 100%;
+    width: 100%;
+  }
+}

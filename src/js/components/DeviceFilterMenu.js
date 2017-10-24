@@ -4,48 +4,38 @@ import MaterialSelect from "../components/MaterialSelect";
 class ListItem extends Component {
   constructor(props){
     super(props);
-    this.state = { click: true }
+    this.state = {
+      click: true
+    }
+
     this.hideDevice = this.hideDevice.bind(this);
-    this.parseState = this.parseState.bind(this);
   }
 
   hideDevice(event){
-    this.props.toggleDisplay(this.props.device.id);
-  }
-
-  parseState() {
-    if (this.props.device.hasOwnProperty('hasPosition')) {
-      if (this.props.device.hasPosition == false) {
-        return "fa fa-eye-slash";
-      }
+    if(this.state.click == true){
+      this.setState({click: !this.state.click});
+    } else {
+      this.setState({click: !this.state.click});
     }
-
-    if (this.props.displayMap.hasOwnProperty(this.props.device.id)) {
-      if (this.props.displayMap[this.props.device.id] == false){
-        return "fa fa-eye-slash";
-      }
-    }
-
-    return "fa fa-eye"
   }
 
   render() {
+    let showOrHideDevice = this.state.click ? "fa fa-eye" : "fa fa-eye-slash";
     const name = this.props.device.label;
-    const attrValue = this.props.device.rssi ? this.props.device.rssi : "unknown"
 
     return (
-      <div className="lst-entry-title col s12" id={this.props.device.id} title="See details">
-        <div className="img col s3" id="img-chip">
-          <img src="images/chip.png" />
+
+        <div className="lst-entry-title col s12" id={this.props.device.id} title="See details">
+            <div className="img col s3" id="img-chip">
+              <img src="images/chip.png" />
+            </div>
+              <div className="user-label truncate col s6">{name}</div>
+              <div className="label col s6">RSSI 70%</div> {/*Fixed RSSI*/}
+              <div className="col s3 img" id="device-view">
+                <a className="" onClick={this.hideDevice}><i className={showOrHideDevice} aria-hidden="true"></i></a>
+              </div>
         </div>
-        <div className="user-label truncate col s6">{name}</div>
-        <div className="label col s6">RSSI {attrValue}</div>
-        <div className="col s3 img" id="device-view">
-          <a className="" onClick={this.hideDevice}>
-            <i className={this.parseState()} aria-hidden="true" />
-          </a>
-        </div>
-      </div>
+
     )
   }
 }
@@ -53,6 +43,13 @@ class ListItem extends Component {
 class ListRender extends Component {
   constructor(props) {
     super(props);
+
+    this.state = {detail: props.deviceid};
+    this.setDetail = this.setDetail.bind(this);
+  }
+
+  setDetail(id) {
+    this.setState({detail: id});
   }
 
   render() {
@@ -64,26 +61,32 @@ class ListRender extends Component {
       )
     }
 
-    const devices = this.props.devices;
-    if ((devices.length > 0) && (devices.constructor == Array)){
+    // handles reordering of cards to keep horizontal alignment
+    const target = this.state.detail;
+    const horSize = 3;
+    let display_list = JSON.parse(JSON.stringify(this.props.devices));
+    display_list.move = function(from, to) {
+      this.splice(to, 0, this.splice(from, 1)[0]);
+    }
+    if (target != null) {
+      for (let i = 0; i < display_list.length; i++) {
+        if (display_list[i].id == target) {
+          display_list.move(i,i - (i % horSize));
+          break;
+        }
+      }
+    }
+
+    if (display_list.length > 0) {
       return (
         <div className="row">
-          { devices.map((device, idx) =>
-            <ListItem device={device} key={device.id}
-                      toggleDisplay={this.props.toggleDisplay}
-                      displayMap={this.props.displayMap} />
-          )}
-        </div>
-      )
-    } else if ((Object.keys(devices).length > 0) && (devices.constructor == Object)) {
-      return (
-        <div className="row">
-          { Object.keys(devices).map((device_id) =>
-            <ListItem device={devices[device_id]}
-                      key={device_id}
-                      toggleDisplay={this.props.toggleDisplay}
-                      displayMap={this.props.displayMap} />
-          )}
+
+            { display_list.map((device, idx) =>
+              <ListItem device={device} key={device.id}
+                detail={device.id === this.state.detail}
+                setDetail={this.setDetail}
+              />
+            )}
         </div>
       )
     } else {
@@ -93,51 +96,6 @@ class ListRender extends Component {
         </div>
       )
     }
-  }
-}
-
-class List extends Component {
-  constructor(props) {
-    super(props);
-    this.hideDevices = this.hideDevices.bind(this);
-    this.showDevices = this.showDevices.bind(this);
-  }
-
-  hideDevices(event) {
-    // TODO this is wrong - do over
-  }
-
-  showDevices(event) {
-    // TODO this is wrong - do over
-  }
-
-  render(){
-    return (
-      <div className="list-of-devices">
-        <div className="row device-list">
-          <div className="col s12 main-title center-align">Devices</div>
-          <div className="col s12 info-header">
-            <div className= "col s1 subtitle">{this.props.devices.length}</div>
-            <div className= "col s5 title">Devices</div>
-            <div className="col s6 device-list-actions">
-              <div className="col s6 action-hide">
-                <a className="waves-effect waves-light" onClick={this.hideDevices}>HIDE ALL</a>
-              </div>
-              <div className="col s6 action-show">
-                <a className="waves-effect waves-light" onClick={this.showDevices}>SHOW ALL</a>
-              </div>
-            </div>
-          </div>
-          <div className="deviceCanvas col s12">
-            <ListRender devices={this.props.devices}
-                        loading={this.props.loading}
-                        deviceid={this.props.deviceid}
-                        toggleDisplay={this.props.toggleDisplay}
-                        displayMap={this.props.displayMap} />
-          </div>
-        </div>
-      </div>
-    )
   }
 }
 
@@ -153,200 +111,322 @@ class FieldSearchValues extends Component {
   }
 }
 
-function ToggleChip(props) {
-  const activeClass = props.active ? "active" : "";
-  return (
-    <div className={"filter-btn col s6 " + activeClass} onClick={props.onClick}>
-      <div className="filter-label">{props.label}</div>
-    </div>
-  )
+class List extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      isDisplayList: true,
+      filter: '',
+      hide: false,
+      changeSidebar: false
+
+    };
+
+    this.applyFiltering = this.applyFiltering.bind(this);
+    this.hideDevices = this.hideDevices.bind(this);
+    this.showDevices = this.showDevices.bind(this);
+    this.filterSidebar = this.filterSidebar.bind(this);
+  }
+
+  // TODO that should be done by the backend, not here.
+  applyFiltering(deviceMap) {
+    // turns the stored device map into a list
+    let list = [];
+    for (let k in deviceMap) {
+      list.push(deviceMap[k]);
+    }
+
+    // TODO ordering should be defined by the user
+    list.sort((a,b) => {
+      if (a.updated > b.updated) {
+        return 1;
+      } else {
+        return -1;
+      }
+    })
+
+    return list;
+  }
+
+  hideDevices(event){
+      if (this.state.hide === false) {
+          this.setState({hide: !this.state.hide});
+      }
+  }
+
+  showDevices(event){
+      if (this.state.hide === true) {
+          this.setState({hide: !this.state.hide});
+      }
+  }
+
+  // TODO this belongs to parent component
+  filterSidebar(event){
+      this.props.callback(this.state.changeSidebar);
+      console.log("Filter");
+  }
+
+  render(){
+    const filteredList = this.applyFiltering(this.props.devices);
+    let hide = this.state.hide ? 'hide' : '';
+
+    const showCanvas = 'deviceCanvas col s12 ' + hide;
+    return (
+        <span className="list-of-devices">
+      <div className="row device-list">
+        <div className="col s12 main-title center-align">Devices</div>
+        <div className="col s12 info-header">
+          <div className= "col s1 subtitle">{filteredList.length}</div>
+          <div className= "col s5 title">Devices</div>
+          <div className="col s6 device-list-actions">
+            <div className="col s6 action-hide"><a className="waves-effect waves-light" onClick={this.hideDevices}>HIDE ALL</a></div>
+            <div className="col s6 action-show"><a className="waves-effect waves-light" onClick={this.showDevices}>SHOW ALL</a></div>
+          </div>
+        </div>
+        <div className={showCanvas}>
+          {(filteredList.length > 0) ? (
+            <ListRender devices={filteredList} loading={this.props.loading} deviceid={this.props.deviceid} />
+          ) : (
+            <div className="col s12 background-info">No configured devices</div>
+          )}
+        </div>
+      </div>
+
+        <div className="device-footer col s12">
+          <div className="col s12 background-info">
+          <a className="waves-effect waves-light" onClick={this.filterSidebar}>FILTERING</a>
+  </div>
+  </div>
+        </span>
+    )
+  }
 }
 
 class Filter extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      query: ["col", "trat", "cam", "ant","MQTT", "virtual"],
+      attribute: "Name",
+      value: "",
+
+      click: false,
+      changeSidebar: true,
+      isActiveMqtt: false,
+      isActiveVirtual: false,
+      isActiveCol: false,
+      isActiveTrat: false,
+      isActiveCam: false,
+
     };
 
-    this.isActive = this.isActive.bind(this);
-    this.toggleState = this.toggleState.bind(this);
+    this.addFilter = this.addFilter.bind(this);
+    this.clearSearch = this.clearSearch.bind(this);
+    this.handleChangeAttribute = this.handleChangeAttribute.bind(this);
+    this.handleChangeValue = this.handleChangeValue.bind(this);
+
+    this.selectItemMqtt = this.selectItemMqtt.bind(this);
+    this.selectItemVirtual = this.selectItemVirtual.bind(this);
+    this.selectItemCol = this.selectItemCol.bind(this);
+    this.selectItemTrat = this.selectItemTrat.bind(this);
+    this.selectItemCam = this.selectItemCam.bind(this);
+
+    this.devicesSidebar = this.devicesSidebar.bind(this);
+
   }
 
-  isActive(search) {
-    return this.state.query.find((e) => {return e.toUpperCase() == search.toUpperCase();});
+  selectItemMqtt(event){
+    this.setState({isActiveMqtt: !this.state.isActiveMqtt});
   }
 
-  toggleState(entry) {
-    let idx = this.state.query.findIndex((e) => {return e.toUpperCase() == entry.toUpperCase();});
-    let updated = this.state.query;
-    if (idx !== -1) {
-      updated.splice(idx, 1);
-    } else {
-      updated.push(entry);
+  selectItemVirtual(event){
+    this.setState({isActiveVirtual: !this.state.isActiveVirtual});
+  }
+
+  selectItemCol(event){
+    this.setState({isActiveCol: !this.state.isActiveCol});
+  }
+
+  selectItemTrat(event){
+    this.setState({isActiveTrat: !this.state.isActiveTrat});
+  }
+
+  selectItemCam(event){
+    this.setState({isActiveCam: !this.state.isActiveCam});
+  }
+
+  handleChangeAttribute(event){
+    this.setState({attribute: event.target.value});
+  }
+
+  handleChangeValue(event){
+    this.setState({value: event.target.value});
+  }
+
+  addFilter(event){
+    if(this.state.click == false){
+      event.preventDefault();
+      this.setState({click: !this.state.click});
+    }
+  }
+
+  clearSearch(event){
+    if(this.state.click == true){
+      event.preventDefault();
+      this.setState({click: !this.state.click});
+      this.setState({attribute: "Name"});
+      this.setState({value: ""});
     }
 
-    this.setState({query: updated});
-
-    let reStr = "";
-    for (let i = 0; i < updated.length; i++){
-      reStr = reStr + updated[i].toUpperCase();
-      if (i !== updated.length - 1) {
-        reStr = reStr + "|";
-      }
+    if(this.state.isActiveMqtt){
+      this.setState({isActiveMqtt: !this.state.isActiveMqtt});
     }
 
-    let re = new RegExp(reStr);
-    let displayMap = {}
-    for (let k in this.props.devices) {
-      if (this.props.devices.hasOwnProperty(k)) {
-        displayMap[k] = (this.props.devices[k].label.match(re) !== null) &&
-                        (this.props.devices[k].protocol.match(re) !== null);
-      }
+    if(this.state.isActiveVirtual){
+      this.setState({isActiveVirtual: !this.state.isActiveVirtual});
     }
 
-    this.props.setDisplayMap(displayMap);
+    if(this.state.isActiveCol){
+      this.setState({isActiveCol: !this.state.isActiveCol});
+    }
+
+    if(this.state.isActiveTrat){
+      this.setState({isActiveTrat: !this.state.isActiveTrat});
+    }
+
+    if(this.state.isActiveCam){
+      this.setState({isActiveCam: !this.state.isActiveCam});
+    }
+  }
+
+  devicesSidebar(event){
+    this.props.callback(this.state.changeSidebar);
   }
 
   render(){
-    return (
-      <div className="device-filtering full-height">
-        <div className="filter-header">
-          <div className="label center-align">FILTERING</div>
-        </div>
-        <div className="filter-devices-info col s12">
-          <div className="protocol col s12">
-            <div className="label">PROTOCOL</div>
-            <ToggleChip active={this.isActive('MQTT')} onClick={() => {this.toggleState('MQTT')}} label="MQTT" />
-            <ToggleChip active={this.isActive("Virtual")} onClick={() => {this.toggleState("Virtual")}} label="Virtual" />
-          </div>
-          <div className="protocol col s12">
-            <div className="label col s12">TYPE</div>
-            <ToggleChip active={this.isActive("COL")} onClick={() => {this.toggleState("COL")}} label="COL" />
-            <ToggleChip active={this.isActive("TRAT")} onClick={() => {this.toggleState("TRAT")}} label="TRAT" />
-            <ToggleChip active={this.isActive("CAM")} onClick={() => {this.toggleState("CAM")}} label="CAM" />
-            <ToggleChip active={this.isActive("ANT")} onClick={() => {this.toggleState("ANT")}} label="ANT" />
-          </div>
-        </div>
-        {/*
-          Backend is not handling those as well as it should.
-          <div className="filter-devices-search">
-            <div className="label center-align">SEARCH BY</div>
-            <form className="col s12 row" onSubmit={this.addFilter}>
-              <div className="col s12">
-                <div className="input-field col s5">
-                  <MaterialSelect id="attributes-select" name="attribute" value={this.state.attribute}
-                                  onChange={this.handleChangeAttribute}>
-                    <option value="Name">Name</option>
-                    <option value="ID">ID</option>
-                    <option value="Protocol">Protocol</option>
-                    <option value="Tags">Tags</option>
-                    <option value="Status">Status</option>
-                  </MaterialSelect>
-                  <label>Attribute</label>
-                </div>
-                <div className="input-field col s5">
-                  <input id="value" type="text" className="validate" name="value"
-                         value={this.state.value} onChange={this.handleChangeValue}/>
-                  <br/>
-                  <label>Value</label>
-                </div>
-                <div className="btn-plus col s2" onClick={this.addFilter}>
-                  <i className="fa fa-plus"></i>
-                </div>
-              </div>
-              {click ? (
-                  <FieldSearchValues attribute={this.state.attribute} value={this.state.value}/>
-              ) : (
-                  <div className="search-value col s12 offset-s1">
-                  </div>
-              )}
-              <div className="actions-buttons">
-                <div className="col s6 button">
-                  <a className="waves-effect waves-light btn" id="btn-clear" tabIndex="-1"
-                     title="Clear" onClick={this.clearSearch}>
-                    Clear
-                  </a>
-                </div>
+    let click = this.state.click ? true : false;
 
-                <div className="col s6 button" type="submit">
-                  <a className="waves-effect waves-light btn" id="btn-search" tabIndex="-1"
-                     title="Search">
-                    <i className="clickable fa fa-search"/>
-                  </a>
+    let searchAttribute = this.state.attribute;
+    let searchValue = this.state.value;
+
+    let isActiveMqtt = this.state.isActiveMqtt ? "active" : "";
+    let isActiveVirtual = this.state.isActiveVirtual ? "active" : "";
+    let isActiveCol = this.state.isActiveCol ? "active" : "";
+    let isActiveTrat = this.state.isActiveTrat ? "active" : "";
+    let isActiveCam = this.state.isActiveCam ? "active" : "";
+
+      return (
+          <div className="device-filtering">
+            <div className="filter-header">
+              <div className="label center-align">FILTERING</div>
+            </div>
+            <div className="filter-devices-info col s12">
+              <div className="protocol col s12">
+                <div className="label">PROTOCOL</div>
+
+                <div className={"filter-btn col s6 " + isActiveMqtt} onClick={this.selectItemMqtt}>
+                  <div className="filter-label">MQTT</div>
+                </div>
+                <div className={"filter-btn col s6 " + isActiveVirtual} onClick={this.selectItemVirtual}>
+                  <div className="filter-label">Virtual</div>
                 </div>
               </div>
-            </form>
+
+              <div className="protocol col s12">
+                <div className="label col s12">TYPE</div>
+                <div className={"filter-btn col s4 " + isActiveCol} onClick={this.selectItemCol}>
+                  <div className="filter-label">Col</div>
+                </div>
+                <div className={"filter-btn col s4 " + isActiveTrat} onClick={this.selectItemTrat}>
+                  <div className="filter-label">Trat</div>
+                </div>
+                <div className={"filter-btn col s4 " + isActiveCam} onClick={this.selectItemCam}>
+                  <div className="filter-label">Cam</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="filter-devices-search">
+              <div className="label center-align">SEARCH BY</div>
+              <form className="col s12 row" onSubmit={this.addFilter}>
+                <div className="col s12">
+                  <div className="input-field col s5">
+                    <MaterialSelect id="attributes-select" name="attribute" value={this.state.attribute}
+                                    onChange={this.handleChangeAttribute}>
+                      <option value="Name">Name</option>
+                      <option value="ID">ID</option>
+                      <option value="Protocol">Protocol</option>
+                      <option value="Tags">Tags</option>
+                      <option value="Status">Status</option>
+                    </MaterialSelect>
+                    <label>Attribute</label>
+                  </div>
+                  <div className="input-field col s5">
+                    <input id="value" type="text" className="validate" name="value"
+                           value={this.state.value} onChange={this.handleChangeValue}/>
+                    <br/>
+                    <label>Value</label>
+                  </div>
+                  <div className="btn-plus col s2" onClick={this.addFilter}>
+                    <i className="fa fa-plus"></i>
+                  </div>
+                </div>
+                  {click ? (
+                      <FieldSearchValues attribute={this.state.attribute} value={this.state.value}/>
+                  ) : (
+                      <div className="search-value col s12 offset-s1">
+                      </div>
+                  )}
+                <div className="actions-buttons">
+                  <div className="col s6 button">
+                    <a className="waves-effect waves-light btn" id="btn-clear" tabIndex="-1"
+                       title="Clear" onClick={this.clearSearch}>
+                      Clear
+                    </a>
+                  </div>
+
+                  <div className="col s6 button" type="submit">
+                    <a className="waves-effect waves-light btn" id="btn-search" tabIndex="-1"
+                       title="Search">
+                      <i className="clickable fa fa-search"/>
+                    </a>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div className="col s12 background-info" onClick={this.devicesSidebar}>
+              <a className="waves-effect waves-light">DEVICES</a>
+            </div>
+
           </div>
-        */}
-      </div>
-    )
+      )
   }
 }
 
 class SideBar extends Component {
   constructor(props){
     super(props);
-    this.state = {
-      click: false,
-      nextKey: "filtering",
-      sideBarOpened: false
-    };
+    this.state = {click: null}
 
-    this.toggleSideBar = this.toggleSideBar.bind(this);
     this.changeSideBar = this.changeSideBar.bind(this);
   }
 
-  toggleSideBar() {
-    const last = this.state.sideBarOpened;
-    this.setState({sideBarOpened: !last});
-  }
+  changeSideBar(callback){
+    if(callback){
+      this.setState({click: this.setState.click});
+    } else {
+      this.setState({click: !this.setState.click});
+    }
 
-  changeSideBar(e) {
-    e.preventDefault();
-    this.setState({
-      click: !this.state.click,
-      nextKey: (this.state.click ? "filtering" : "devices")
-    });
   }
 
   render(){
-    function Footer(props) {
-      return (
-        <div className="device-footer col s12 background-info" onClick={props.callback}>
-            <a className="waves-effect waves-light">{props.nextKey.toUpperCase()}</a>
-          </div>
-      )
+    if (this.state.click) {
+      return (<Filter devices={this.props.devices} callback={this.changeSideBar}/>);
+    } else {
+      return (<List devices={this.props.devices} callback={this.changeSideBar}/>);
     }
-
-    const btnSideBarClass = "fa fa-chevron-" + (this.state.sideBarOpened ? "right" : "left");
-    const divFilterList =  this.state.click ? (
-      <Filter devices={this.props.devices} setDisplayMap={this.props.setDisplayMap}/>
-    ) : (
-      <List devices={this.props.devices}
-            toggleDisplay={this.props.toggleDisplay}
-            displayMap={this.props.statusMap} />
-    );
-
-    return (
-      <div className="col m12">
-        <div className={"col m12 div-btn-side-painel " + (this.state.sideBarOpened ? 'push-left' : 'no-left')}>
-          <button type="button" className='btn btn-circle sideBarToggle' onClick={this.toggleSideBar}>
-            <i className={btnSideBarClass} aria-hidden="true"></i>
-          </button>
-        </div>
-        { this.state.sideBarOpened ? (
-          <div className="col device-painel full-height">
-            <div className="col device-painel-body relative">
-              {divFilterList}
-            </div>
-            <Footer callback={this.changeSideBar} nextKey={this.state.nextKey} />
-          </div>
-        ) : (
-          null
-        )}
-      </div>
-    )
   }
 }
 
