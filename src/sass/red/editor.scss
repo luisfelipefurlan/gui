@@ -19,18 +19,17 @@
     position: absolute;
     margin: 0;
     top: 0;
-    bottom: 0px;
-    right: 323px;
+    bottom: 0;
     width: 0;
     z-index: 5;
 }
 .editor-tray {
-    position:absolute;
+    position: fixed;
     margin: 0;
-    top: 0;
+    top: 115px;
     //min-width: 500px;
-    width: auto;
-    right: -1000px;
+    width: auto !important;
+    //right: -1000px;
     bottom: 0;
     background: #fff;
     border-left: 1px solid $secondary-border-color;
@@ -39,6 +38,8 @@
 }
 .editor-tray.open {
     right: 0;
+    position: fixed;
+    top: 115px;
 }
 .editor-tray-body-wrapper {
     width: 100%;
@@ -94,9 +95,6 @@
                 color: $editor-button-color-primary !important;
             }
         }
-        &:not(.disabled):hover {
-            //color: $editor-button-color;
-        }
         &.disabled {
             background: none;
         }
@@ -147,8 +145,8 @@
 }
 .editor-tray-resize-handle {
     position: absolute;
-    top: 0px;
-    bottom: 0px;
+    top: 0;
+    bottom: 0;
     width: 7px;
     left: -9px;
     background: $background-color; // url(./images/grip.png) no-repeat 50% 50%;
@@ -197,7 +195,11 @@
     width: 100px;
 }
 .form-row input, .form-row div[contenteditable="true"] {
-    width:70%;
+    width:70% !important;
+}
+
+.form-row .red-ui-typedInput-container input  {
+    width:100% !important;
 }
 
 .form-tips {
@@ -244,17 +246,6 @@
     padding: 0 5px;
 }
 
-.dialog-form {
-    .button-group {
-        .editor-button {
-            &:first-child {
-
-            }
-        }
-    }
-
-}
-
 #node-config-dialog-scope-container {
     cursor: auto;
     float: right;
@@ -268,7 +259,7 @@
     vertical-align: middle;
 }
 #node-config-dialog-scope {
-    margin: 1px 0 0 0;
+    margin: 1px 0 0;
     padding: 0;
     height: 22px;
     width: 200px;
@@ -278,7 +269,6 @@
     vertical-align: middle;
     display:inline-block;
     margin-right: 20px;
-    float:left;
     font-size: 12px;
     line-height: 35px;
 }

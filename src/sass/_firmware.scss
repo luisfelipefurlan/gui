@@ -1,0 +1,158 @@
+.dropzone {
+    width: 100%;
+    cursor: pointer;
+    font-family: 'Raleway', serif;
+
+    & > div {
+        width: 100% !important;
+        height: 75px !important;
+        padding: 0 18px;
+        font-weight: bold;
+        margin-top: 10px;
+        margin-bottom: 5px;
+
+        p {
+            font-size: 15px;
+        }
+    }
+}
+
+.body-form-fw {
+    margin-left: 28px !important;
+    margin-right: 28px !important;
+
+    .header2 {
+        padding-bottom: 5px;
+        font-family: Raleway, serif;
+        font-style: normal;
+        font-weight: 500;
+        line-height: normal;
+        font-size: 17px;
+        color: #7C7C7C;
+    }
+
+}
+
+.box-image-info {
+
+    .image-up {
+        box-sizing: border-box;
+        width: 100%;
+
+        .btn-disable {
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .new-btn-flat.style-2 {
+            width: 100%;
+        }
+
+        .cid_upload_button {
+            display: inline-block;
+        }
+
+        .cid_select {
+            width: 100%;
+        }
+
+        button {
+            width: 100%;
+            border-color: #1c2733;
+            color: #1c2733;
+        }
+
+        .btn-action {
+            padding-bottom: 60px;
+        }
+
+        .new-btn-flat {
+            margin-left: initial;
+            margin-right: initial;
+        }
+    }
+
+    .info {
+        border: 1px solid #E0E0E0;
+        border-radius: 3px;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 5px 15px;
+        margin-top: 10px;
+        display: block;
+
+
+        .title-info {
+            font-size: 15px;
+            font-family: Raleway, serif;
+            font-style: normal;
+            font-weight: 500;
+            line-height: 25px;
+            color: #7C7C7C;
+        }
+
+        .icon {
+            display: block;
+            float: right;
+
+            img {
+                height: 38px;
+            }
+        }
+
+        .desc {
+
+            .info-group {
+
+                padding: 5px 0;
+
+                .label {
+                    color: #7C7C7C;
+                    font-family: Raleway, serif;
+                    font-style: normal;
+                    font-weight: 500;
+                    font-size: 12px;
+                    align-items: center;
+
+                }
+
+                .value {
+                    color: #4F4F4F;
+                    font-family: Raleway, serif;
+                    font-style: normal;
+                    font-weight: bold;
+                    font-size: 13px;
+                    line-height: 15px;
+                }
+            }
+        }
+
+    }
+}
+
+
+.sidebar-firmware {
+    @extend .generic-sidebar;
+    box-shadow: -3px 0 8px 0 rgba(0, 0, 0, 0.2);
+
+    .header {
+        background: linear-gradient(96.69deg, #813C9A 0%, #E96D71 99.09%);
+    }
+
+    .body {
+        .sub-content {
+            height: calc(100% - 58px);
+        }
+
+        .body-form {
+            padding-bottom: 50px;
+            height: auto;
+        }
+    }
+
+    .footer {
+        .new-btn-flat.style-2.secondary {
+            width: 100%;
+        }
+    }
+}

@@ -1,47 +1,108 @@
-import loginManager from '../comms/login/LoginManager';
+import { browserHistory } from 'react-router';
+import * as i18next from 'i18next';
+import loginManager from 'Comms/login/LoginManager';
+import toaster from 'Comms/util/materialize';
+import { AbilityUtil } from 'Components/permissions/ability';
 
-var alt = require('../alt');
+const alt = require('../alt');
+
+const { t } = i18next;
 
 class LoginActions {
-
-  authenticate(login) {
-    return (dispatch) => {
-      dispatch();
-      loginManager.authenticate(login)
-        .then((response) => {
-          this.loginSuccess(response);
-        })
-        .catch((error) => {
-          // console.error('Caught exception (May be a misusage of defer().)', error);
-          this.loginFailed(error);
-        })
-    }
-  }
-
-  loginSuccess(token) {
-    return token;
-  }
-
-  loginFailed(error) {
-    // console.error('auth failed', error, error.data);
-    if (error instanceof TypeError) {
-      return "No connection to server."
+    authenticate(login) {
+        return (dispatch) => {
+            dispatch();
+            loginManager.authenticate(login)
+                .then((response) => {
+                    browserHistory.push('/#/');
+                    if (response.data.login === null) {
+                        this.loginFailed(response.data.login);
+                    } else {
+                        this.loginPermissions(response.data.login.user.permissions);
+                        this.loginSuccess(response.data.login);
+                    }
+                })
+                .catch((error) => {
+                    this.loginFailed(error);
+                });
+        };
     }
 
-    const data = error.data;
-    if ((data.status == 401) || (data.status == 403)) {
-      return "Authentication failed.";
-    } else if (data.status == 500) {
-      return "Internal error. Please try again later."
-    } else {
-      return "No connection to server."
+    logout() {
+        AbilityUtil.logoff();
+        return true;
     }
-    return error;
-  }
 
-  logout() {
-    return true;
-  }
+    setPassword(login) {
+        return (dispatch) => {
+            dispatch();
+            loginManager.setNewPassword(login)
+                .then(() => {
+                    browserHistory.push('/#/login');
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    this.loginFailed(error);
+                });
+        };
+    }
+
+    updatePassword(data) {
+        return (dispatch) => {
+            dispatch();
+            loginManager.updatePassword(data)
+                .then(() => {
+                    toaster.success(t('text.password_updated'));
+                })
+                .catch((error) => {
+                    toaster.error(error.message);
+                });
+        };
+    }
+
+    resetPassword(username) {
+        return (dispatch) => {
+            dispatch();
+            loginManager.resetPassword(username);
+        };
+    }
+
+    loginSuccess(token) {
+        return token;
+    }
+
+    loginPermissions(permissions) {
+        AbilityUtil.loginPermissions(permissions);
+        return permissions;
+    }
+
+    loginFailed(error) {
+        let errMsg = '';
+
+        if (error === null) {
+            errMsg = t('login:errors.not_found');
+        } else if (error instanceof TypeError) {
+            errMsg = t('login:errors.no_connection');
+        } else {
+            const status = (error.data.status) ? error.data.status : error.data.data.status;
+            if (status === 401 || status === 403) {
+                errMsg = t('login:errors.auth_failed');
+            } else if (status === 500) {
+                errMsg = t('login:errors.internal_error');
+            } else if (error.message) {
+                errMsg = error.message;
+            }
+        }
+
+        if (errMsg === '') {
+            errMsg = t('login:errors.not_found');
+        }
+
+        toaster.error(errMsg);
+
+        return errMsg;
+    }
 }
 
-alt.createActions(LoginActions, exports);
+const _login = alt.createActions(LoginActions, exports);
+export default _login;

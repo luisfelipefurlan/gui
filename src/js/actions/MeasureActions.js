@@ -1,79 +1,105 @@
-import measureManager from '../comms/measures/MeasureManager';
+/* eslint-disable */
 import LoginStore from '../stores/LoginStore';
-
-var alt = require('../alt');
 import util from '../comms/util';
 
+const alt = require('../alt');
+
 class MeasureActions {
+    appendMeasures(data) { return data; }
 
-  updateMeasures(data) { return data; }
-  fetchMeasure(device_id, attrs, history_length, callback) {
-    function getUrl() {
-      if (history_length === undefined) { history_length = 1; }
-      let url = '/history/device/' + device_id + '/history' + '?lastN=' + history_length;
-      attrs.map((attr) => {url += '&attr=' + attr});
-      return url;
+    updateTracking(data) {
+        return data;
+    }
+    updateGeoLabel(geoInfo){
+        return geoInfo;
     }
 
-    return (dispatch) => {
-      dispatch();
-      util._runFetch(getUrl(), {method: 'get'})
-        .then((reply) => {
-          let data = {device: device_id, data: reply};
-          if (attrs.length == 1) {
-            data.data = {};
-            data.data[attrs[0]] = reply;
-          }
-          this.updateMeasures(data);
-          if (callback) {callback(reply)}
-        })
-        .catch((error) => {console.error("failed to fetch data", error);});
-    }
-  }
-
-  updatePosition(data) {return data;}
-  fetchPosition(device_id, history_length) {
-    const attrs = ['lat', 'lng', 'sinr', 'rssi', 'ts', 'device-status'];
-    function getUrl() {
-      if (history_length === undefined) { history_length = 1; }
-      let url = '/history/device/' + device_id + '/history' + '?lastN=' + history_length;
-      attrs.map((attr) => {url += '&attr=' + attr});
-      return url;
+    updateMeasures(data) {
+        return data;
     }
 
-    return (dispatch) => {
-      dispatch();
-      util._runFetch(getUrl(), {method: 'get'})
-        .then((reply) => {
-          let data = {device_id: device_id};
-          if ((reply.lat.length > 0) && (reply.lng.length > 0)) {
-            if (reply.lat[0].value !== "nan" && reply.lng[0].value !== "nan") {
-              data.position = [parseFloat(reply.lat[0].value), parseFloat(reply.lng[0].value)];
+
+    fetchMeasure(device, attrs, history_length) {
+        function getUrl() {
+            if (history_length === undefined) { history_length = 1; }
+            const url = `/history/device/${device.id}/history?lastN=${history_length}&attr=${attrs}`;
+            return url;
+        }
+
+        return (dispatch) => {
+            dispatch();
+
+            const service = LoginStore.getState().user.service;
+            const config = {
+                method: 'get',
+                headers: new Headers({
+                    'fiware-service': service,
+                    'fiware-servicepath': '/',
+                }),
+            };
+            util._runFetch(getUrl(), config)
+                .then((reply) => {
+                    if (reply !== null || reply !== undefined) {
+                        device[`_${attrs}`] = reply.reverse();
+                    }
+                    this.updateMeasures(device);
+                })
+                .catch((error) => {
+                    this.updateMeasures(device);
+                    console.error('failed to fetch data', error);
+                });
+        };
+    }
+
+    updatePosition(data) { return data; }
+
+    fetchPosition(device, device_id, attr, history_length) {
+        function getUrl() {
+            if (history_length === undefined) { history_length = 1; }
+            const url = `/history/device/${device_id}/history?lastN=${history_length}&attr=${attr}`;
+            return url;
+        }
+
+        function parserPosition(position) {
+            const parsedPosition = position.split(',');
+            if (parsedPosition.length > 1) {
+                return [parseFloat(parsedPosition[0]), parseFloat(parsedPosition[1])];
             }
-          }
+        }
 
-          if (reply.sinr.length > 0) {
-            data.sinr = parseFloat(reply.sinr[0].value)
-          }
-          if (reply.rssi.length > 0) {
-            data.rssi = parseFloat(reply.rssi[0].value)
-          }
-          if (reply.ts.length > 0) {
-            data.ts = reply.ts[0].ts
-          }
-          if (reply['device-status'].length > 0) {
-            data.status = reply['device-status'][0].value
-          }
+        return (dispatch) => {
+            dispatch();
 
-          this.updatePosition(data);
-        })
-        .catch((error) => {console.error("failed to fetch data", error);});
+            const service = LoginStore.getState().user.service;
+            const config = {
+                method: 'get',
+                headers: new Headers({
+                    'fiware-service': service,
+                    'fiware-servicepath': '/',
+                }),
+            };
+
+            util._runFetch(getUrl(), config)
+                .then((reply) => {
+                    let position = null;
+                    if (reply[0].value !== 'nan') {
+                        position = parserPosition(reply[0].value);
+                        device.timestamp = util.iso_to_date(reply[0].ts);
+                    }
+                    device.position = position;
+                    this.updateMeasures(device);
+                })
+                .catch((error) => { console.error('failed to fetch data', error); });
+        };
     }
-  }
 
-  measuresFailed(error) {
-    return error;
-  }
+    updateMeasuresAttr(device, attr, data) {
+        return { device, attr, data };
+    }
+
+    measuresFailed(error) {
+        return error;
+    }
 }
 
 alt.createActions(MeasureActions, exports);

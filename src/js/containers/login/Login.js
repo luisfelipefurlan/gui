@@ -1,190 +1,284 @@
 import React, { Component } from 'react';
-import { Link } from 'react-router'
+import PropTypes from 'prop-types';
+import Fade from 'react-reveal/Fade';
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
-import ReactDOM from 'react-dom';
 import AltContainer from 'alt-container';
+import MaterialInput from 'Components/MaterialInput';
+import { withNamespaces } from 'react-i18next';
+import LoginActions from 'Actions/LoginActions';
+import LoginStore from 'Stores/LoginStore';
+import { RecoveryPasswordModal } from 'Components/Modal';
 
-import LoginActions from '../../actions/LoginActions';
-import LoginStore from '../../stores/LoginStore';
 
 class Content extends Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = {
-      login: {
-        username: "",
-        passwd: ""
-      },
-      invalid: {},
-      error: ""
+        this.state = {
+            login: {
+                username: '',
+                password: '',
+            },
+            valid: {
+                state: true,
+                currentError: '',
+            },
+            appear: true,
+            showPasswordModal: false,
+            hasBeError: false,
+            error: '',
+        };
+        this.login = this.login.bind(this);
+        this.handleChange = this.handleChange.bind(this);
+        this.validate = this.validate.bind(this);
+        this.openPasswordModal = this.openPasswordModal.bind(this);
+        this.handlePasswordModal = this.handlePasswordModal.bind(this);
+        this.checkUsername = this.checkUsername.bind(this);
+        this.getError = this.getError.bind(this);
     }
 
-    this.login = this.login.bind(this);
-    this.handleChange = this.handleChange.bind(this);
-    this.validate = this.validate.bind(this);
-  }
-
-  componentDidMount() {
-    let callback = this.handleChange.bind(this);
-  }
-
-  validate() {
-    let result = {};
-    let invalid = {}
-    const username = /^[a-z0-9_]+$/;
-    if (this.state.login.username.trim().length == 0) {
-      invalid['username'] = "This can't be empty";
-    } else if (username.test(this.state.login.username) == false) {
-      result.error = "Authentication failed";
+    static getDerivedStateFromProps(props, state) {
+        if (props.hasError !== state.hasBeError || props.error !== state.error) {
+            return {
+                ...state,
+                hasBeError: props.hasError,
+                error: props.error,
+            };
+        }
+        return null;
     }
 
-    if (this.state.login.passwd.trim().length == 0) {
-      invalid['passwd'] = "This can't be empty";
+    getError() {
+        const { valid, hasBeError, error } = this.state;
+        // GUI checking
+        if (!valid.state) { return valid.currentError; }
+        // Backend checking
+        if (hasBeError) {
+            return error;
+        }
+        return '';
     }
 
-    if (Object.keys(invalid).length > 0) { result['invalid'] = invalid; }
-    return Object.keys(result).length > 0 ? result : undefined;
-  }
-
-  login(e) {
-    e.preventDefault();
-    const results = this.validate();
-    if (results !== undefined) {
-      this.setState(results);
-    } else {
-      this.setState({error: '', invalid: {}})
-      LoginActions.authenticate(JSON.parse(JSON.stringify(this.state.login)));
-    }
-  }
-
-  handleChange(event) {
-    const target = event.target;
-    let state = this.state.login;
-    state[target.name] = target.value;
-    this.setState({
-      login: state
-    });
-  }
-
-  render() {
-    const state = this.state;
-    const error = this.props.error;
-
-    function getClass(field) {
-      if (state.invalid.hasOwnProperty(field)) {
-        return "react-validate invalid";
-      } else {
-        return "react-validate";
-      }
+    checkUsername(username) {
+        const regex = /^([a-z0-9_])+$/;
+        return regex.test(username);
     }
 
-    function getError() {
-      return state.error.length > 0 ? state.error : error;
+
+    validate(user, password) {
+        const { t } = this.props;
+        const valid = { state: true, currentError: '' };
+
+        if (user.trim().length === 0) {
+            valid.state = false;
+            valid.currentError = t('login:alerts.empty_user');
+            return valid;
+        }
+
+        if (password.trim().length === 0) {
+            valid.state = false;
+            valid.currentError = t('login:alerts.empty_pass');
+            return valid;
+        }
+
+        if (!this.checkUsername(user)) {
+            valid.state = false;
+            valid.currentError = t('login:alerts.invalid_user');
+            return valid;
+        }
+
+        return valid;
     }
 
-    return (
-      <div className="login">
-        <div className="row">
-          <div className="col s12 m4 login-area-left-side">
-            <div className="row icon">
-              <p><img src="images/main.png"/></p>
-            </div>
-            <div className="row">
-              {/* TODO This really should be in an i18n file somewhere */}
-              <div className="info">
-                dojot IoT platform provides an open and solid foundation for a series of
-                applications that depend on data being collected from a myriad of devices,
-                allowing developers to focus on the real value of their innovative applications.
-              </div>
-            </div>
-          </div>
-          <div className="col s12 m8 login-area-right-side">
-            <div className="row">
-              <div className="col s12 m5 offset-m3">
-                <div className="login-page-title">Login</div>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col s12 m4 offset-m4">
-                <div className="login-page-subtitle">Sign in to start your session</div>
-              </div>
-            </div>
-            { this.props.error && (
-              <div className="row">
-                <div className="col s12 m4 offset-m4">
-                  <div className="login-page-error">
-                    {getError()}<i className="material-icons prefix">info_outline</i>
-                  </div>
+    login(e) {
+        e.preventDefault();
+        const { login } = this.state;
+        const { username, password } = login;
+        const valid = this.validate(username, password);
+        if (valid.state) {
+            LoginActions.authenticate(JSON.parse(JSON.stringify(login)));
+        }
+        this.setState({ valid, appear: true });
+    }
+
+    handleChange(event) {
+        const { target: { name, value } } = event;
+        const { login } = this.state;
+        login[name] = value;
+        this.setState({ login });
+    }
+
+    openPasswordModal(status) {
+        this.setState({ showPasswordModal: status });
+    }
+
+    handlePasswordModal() {
+        this.setState({ showPasswordModal: true });
+    }
+
+    render() {
+        const {
+            appear, valid, showPasswordModal, hasBeError,
+            login: { username, password },
+        } = this.state;
+        const { t, loading } = this.props;
+
+        const titleLogin = `[  ${t('login:title')}  ]`;
+        return (
+            <div className="row m0">
+                <div className="login col s12 p0 bg-left">
+                    <div className="col  s4 p0 left-side" />
+                    <div className="col s8 login-area-right-side bg-right">
+                        <div className="col s7">
+                            <form>
+                                <div className="row">
+                                    <div className="col s12  offset-m1">
+                                        <div className="login-page-title">
+                                            {titleLogin}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="row mb0">
+                                    <div className="col s12  offset-m2">
+                                        <div className="login-page-subtitle">
+                                            {t('login:sign_in_desc')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="row mb0">
+                                    <div className="input-field col s12 m8 offset-m2">
+                                        <MaterialInput
+                                            name="username"
+                                            id="fld_user"
+                                            className="attribute-type-login pointer"
+                                            maxLength={40}
+                                            value={username}
+                                            onChange={e => this.handleChange(e)}
+                                        >
+                                            {t('username.label')}
+                                        </MaterialInput>
+                                    </div>
+                                    <div className="input-field col s12 m8 offset-m2">
+                                        <MaterialInput
+                                            name="password"
+                                            type="password"
+                                            id="fld_password"
+                                            className="attribute-type-login pointer"
+                                            maxLength={40}
+                                            value={password}
+                                            onChange={e => this.handleChange(e)}
+                                        >
+                                            {t('login:password.label')}
+                                        </MaterialInput>
+                                        <div className="row">
+                                            <div className="forget-password col s12">
+                                                <span
+                                                    tabIndex="-1"
+                                                    role="button"
+                                                    onKeyPress={this.handlePasswordModal}
+                                                    onClick={this.handlePasswordModal}
+                                                >
+                                                    {t('login:forgot_password')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="row">
+                                    <div className="col s11">
+                                        {loading ? (
+                                            <button
+                                                type="button"
+                                                className="clear-btn new-btn-flat red sp-btn-loading"
+                                            >
+                                                <i className="fa fa-circle-o-notch fa-spin fa-fw" />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="submit"
+                                                tabIndex="0"
+                                                onKeyPress={this.login}
+                                                onClick={this.login}
+                                                className="clear-btn new-btn-flat red sp-btn-login"
+                                            >
+                                                {t('login:title')}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="row">
+                                    <div className="col s12 m8 offset-m2">
+                                        { (hasBeError || !valid.state) ? (
+                                            <Fade
+                                                bottom
+                                                when={appear}
+                                                onReveal={() => setTimeout(() => {
+                                                    this.setState({ appear: false });
+                                                }, 3000)}
+                                            >
+                                                <div className="login-page-error">
+                                                    <span>{this.getError()}</span>
+                                                    <i className="fa fa-exclamation-triangle" />
+                                                </div>
+                                            </Fade>
+                                        ) : <div className="no-error" />}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div className="col s5 right-side">
+                            <div className="dojot-logo">
+                                <img alt="dojot logo" src="images/dojot_white.png" />
+                            </div>
+                            <div className="slogan">
+                                <b>Do IoT</b>
+                                <br />
+Easy to use
+                                <br />
+                Fast to develop
+                                <br />
+                                {' '}
+Safe to deploy
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            )}
-            <form onSubmit={this.login}>
-              <div className="row">
-                  <div className="input-field col s12 m4 offset-m4">
-                    <input id="fld_user" type="text"
-                           name="username"  className={getClass('username')}
-                           onChange={this.handleChange}
-                           value={this.state.login.user} />
-                    <label htmlFor="fld_user" data-success=""
-                           data-error={this.state.invalid.username}>Username</label>
-                    <i className="material-icons prefix">account_circle</i>
-                  </div>
-                  <div className="input-field col s12 m4 offset-m4">
-                    <input id="fld_password" type="password"
-                           name="passwd" className={getClass('passwd')}
-                           onChange={this.handleChange}
-                           value={this.state.login.password} />
-                    <label htmlFor="fld_password" data-success=""
-                           data-error={this.state.invalid.passwd}>Password</label>
-                    <i className="material-icons prefix">lock_open</i>
-                  </div>
-              </div>
-              <div className="row">
-                <div className="col s12 m5 offset-m3">
-                  <div><i> Forgot your password?</i></div>
-                </div>
-              </div>
-              <div className="row">
-                <div className="col s12 m1 offset-m7">
-                    { this.props.loading ? (
-                      <button type="submit" className="waves-effect waves-dark btn-flat">
-                        <i className="fa fa-circle-o-notch fa-spin fa-fw"/>
-                      </button>
-                    ) : (
-                      <button type="submit" className="waves-effect waves-dark btn-flat">
-                        Login
-                      </button>
-                    )}
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    )
-  }
+                {showPasswordModal
+                    ? (
+                        <RecoveryPasswordModal
+                            openPasswordModal={this.openPasswordModal}
+                        />
+                    ) : <div />}
+            </div>
+        );
+    }
 }
 
-class Login extends Component {
-  constructor (props) {
-    super(props);
-  }
+Content.propTypes = {
+    t: PropTypes.func.isRequired,
+    loading: PropTypes.bool.isRequired,
+};
 
-  render() {
-    return (
-      <ReactCSSTransitionGroup
-          transitionName="first"
-          transitionAppear={true}
-          transitionAppearTimeout={500}
-          transitionEnterTimeout={500}
-          transitionLeaveTimeout={500} >
+
+const Login = ({ t }) => (
+    <ReactCSSTransitionGroup
+        transitionName="first"
+        transitionAppear
+        transitionAppearTimeout={500}
+        transitionEnterTimeout={500}
+        transitionLeaveTimeout={500}
+    >
         <AltContainer store={LoginStore}>
-          <Content />
+            <Content t={t} />
         </AltContainer>
-      </ReactCSSTransitionGroup>
-    );
-  }
-}
+    </ReactCSSTransitionGroup>
+);
 
-export default Login;
+
+Login.propTypes = {
+    t: PropTypes.func.isRequired,
+};
+
+
+export default withNamespaces()(Login);

@@ -1,3 +1,11 @@
+.sidebar-auth
+{
+  .fixed-height{
+    height: calc(100% - 49px);
+    overflow: auto;
+  }
+}
+
 .openSans8{
   font-family: 'Open Sans', sans-serif;
   font-size: 9pt;
@@ -72,9 +80,9 @@
 
   &:hover .hovered {
     position: absolute;
-    left: 0px;
+    left: 0;
     padding: 10px;
-    top: 0px;
+    top: 0;
     height: 100%;
     opacity: 1;
     background-color: $black;
@@ -195,7 +203,7 @@
   position: relative;
   color: #b8b8b8;
   font-size: 125%;
-  margin-bottom: 0px;
+  margin-bottom: 0;
   left: 7px;
   white-space:nowrap;
 }
@@ -293,7 +301,7 @@
 }
 
 .userSubHeader {
-  background-color: #fff;;
+  background-color: #fff;
   padding-top:10px;
   padding-bottom:62px;
   font-size: 16pt;
@@ -303,7 +311,7 @@
   z-index: 1000;
   overflow: hidden;
 
-  position: absolute;
+  position: relative;
   width: 100%;
   height: $page-header-size;
   animation-name: height-opacity-0-to-100;
@@ -334,18 +342,24 @@
 }
 
 .marginBottom0px {
-  margin-bottom: 0px !important;
+  margin-bottom: 0 !important;
 }
 
 #userMain {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: auto;
+  float: left;
+}
+
+.user-card{
+  width: 230px !important;
 }
 
 @keyframes height-opacity-0-to-100 {
     0% {
-      height: 0px;
+      height: 0;
       opacity: 0;
     }
     25% {
@@ -407,7 +421,7 @@
       }
       .title2{
         position:relative;
-        right:0px;
+        right:0;
       }
 
 
@@ -416,7 +430,7 @@
   .subTitle{
     font-size: 12px;
     position:relative;
-    bottom: 0px;
+    bottom: 0;
     left: -95px;
     white-space: nowrap;
   }
@@ -480,7 +494,7 @@
 
   #nextPageId{
     position:relative;
-    left:0px;
+    left:0;
     top:31px;
 
     i{
@@ -517,7 +531,7 @@
           .userCanvasFooter{
             #nextPageId{
               position:relative;
-              bottom:0px;
+              bottom:0;
 
               i{
                 position:relative;
@@ -528,11 +542,11 @@
 
             #prevPageId{
               position:relative;
-              bottom:0px;
+              bottom:0;
 
               i{
                 position:relative;
-                bottom:0px;
+                bottom:0;
                 left:6px;
               }
             }

@@ -1,13 +1,14 @@
 .filter-wrapper {
-  width: 100%;
-  bottom: -8px;
+  width: 400px;
   font-size: 80%;
-  color: $silver;
-    position: relative;
+  color: #b8b8b8;
+  float: left;
   input {
     margin-bottom: 1em !important;
   }
-
+  .input-field {
+    margin: 0 !important;
+  }
   .input-field .prefix {
     font-size: 230%;
     padding-top: 2%
@@ -15,5 +16,24 @@
 
   .input-field input {
     border-bottom: 2px solid $silver;
+  }
+}
+
+.elements_page_div
+{
+  width: 60px;
+  float: left;
+
+  label
+  {
+    text-align: left;
+    left: 0;
+    display: inherit;
+    font-family: 'Roboto';
+    line-height: 23px;
+    font-size: 09px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-weight: 500;
   }
 }

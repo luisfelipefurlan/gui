@@ -1,739 +1,812 @@
-import React, { Component } from 'react';
+/* eslint-disable */
+import React, { Component, Fragment } from 'react';
 import ReactDOM from 'react-dom';
-import Dropzone from 'react-dropzone'
-import userManager from '../../comms/users/UserManager';
-
-import alt from '../../alt';
 import AltContainer from 'alt-container';
-var UserStore = require('../../stores/UserStore');
-var UserActions = require('../../actions/UserActions');
-
-import { PageHeader } from "../../containers/full/PageHeader";
-import Filter from "../utils/Filter";
-
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
+import { NewPageHeader } from '../../containers/full/PageHeader';
+import {
+    Trans,  withNamespaces
+} from 'react-i18next';
+import MaterialSelect from '../../components/MaterialSelect';
+import LoginStore from '../../stores/LoginStore';
+import UserActions from '../../actions/UserActions';
+import GroupActions from '../../actions/GroupActions';
+import toaster from '../../comms/util/materialize';
+import { RemoveModal } from '../../components/Modal';
+import UserStore from '../../stores/UserStore';
+import { DojotBtnLink } from '../../components/DojotButton';
+import ability from 'Components/permissions/ability';
+import Can from '../../components/permissions/Can';
+import SideBarRight from 'Views/groups/SideBarRight';
 
-import MaterialSelect from "../../components/MaterialSelect";
-import MaterialInput from "../../components/MaterialInput";
-import AutheticationFailed from "../../components/AuthenticationFailed";
-import Paginator from "../../components/Paginator";
+class SideBar extends Component {
+    constructor() {
+        super();
+        this.state = {
+            user: {
+                name: '',
+                username: '',
+                email: '',
+                confirmEmail: '',
+                profile: '',
+                service: ''
+            },
+            show_modal: false,
+            confirmEmail: '',
+            isInvalid: {
+                username: false,
+                name: false,
+                email: false,
+                confirmEmail: false,
+            },
+        };
 
-import LoginStore from "../../stores/LoginStore";
+        this.handleChange = this.handleChange.bind(this);
+        this.handleCreate = this.handleCreate.bind(this);
+        this.handleSave = this.handleSave.bind(this);
+        this.handleDelete = this.handleDelete.bind(this);
+        this.loadUsers = this.loadUsers.bind(this);
+        this.checkValidation = this.checkValidation.bind(this);
+        this.hideSideBar = this.hideSideBar.bind(this);
+        this.formUser = this.formUser.bind(this);
+        this.setModal = this.setModal.bind(this);
+        this.removeUser = this.removeUser.bind(this);
+        this.fieldValidation = this.fieldValidation.bind(this);
+    }
 
+    componentDidMount() {
+        this.loadUsers();
+    }
+
+    static getDerivedStateFromProps(props, state) {
+        if (props.user !== state.user) {
+            return {
+                user: props.user,
+                isInvalid: {
+                    username: false,
+                    name: false,
+                    email: false,
+                    confirmEmail: false
+                }
+            };
+        }
+        // Return null to indicate no change to state.
+        return null;
+    }
+
+    loadUsers() {
+        UserActions.fetchUsers.defer();
+    }
+
+    checkValidation() {
+        const { t } = this.props;
+        if (this.checkUsername(this.state.user.username)) {
+            toaster.warning(t('users:username.error'));
+            return false;
+        }
+
+        if (this.checkName(this.state.user.name.trim())) {
+            toaster.warning(t('users:name.error'));
+            return false;
+        }
+        if (this.checkEmail(this.state.user.email)) {
+            toaster.warning(t('users:email.error'));
+            return false;
+        }
+
+        if (this.checkConfirmEmail(this.state.user.email, this.state.user.confirmEmail)) {
+            toaster.warning(t('users:confirm_email.error'));
+            return false;
+        }
+
+        if (this.state.user.profile === '') {
+            toaster.warning(t('users:profile.error'));
+            return false;
+        }
+        return true;
+    }
+
+    handleChange(event) {
+        const target = event.target;
+        const user = this.state.user;
+        user[target.name] = target.value;
+        this.fieldValidation(user, target.name);
+    }
+
+    handleSave() {
+        const tmp = JSON.parse(JSON.stringify(this.state.user));
+        delete tmp.created_by;
+        delete tmp.created_date;
+        delete tmp.passwd;
+        delete tmp.password;
+        const { t } = this.props;
+        if (this.checkValidation()) {
+            UserActions.triggerUpdate(
+                tmp,
+                () => {
+                    toaster.success(t('users:alerts.user_update'));
+                    this.hideSideBar();
+                },
+                () => {
+                    toaster.error(t('users:alerts.user_update_err'));
+                },
+            );
+        }
+    }
+
+    handleCreate() {
+        if (this.checkValidation()) {
+            const { userTenant } = this.props;
+            const temp = this.state.user;
+            temp.service = userTenant;
+            temp.email = String(temp.email)
+                .toLowerCase();
+            const { t } = this.props;
+            UserActions.addUser(
+                temp,
+                () => {
+                    toaster.success(t('users:alerts.user_create'));
+                    this.hideSideBar();
+                },
+                (user) => {
+                    this.formUser(user);
+                },
+            );
+        }
+    }
+
+
+    formUser(user) {
+        this.props.formUser(user);
+    }
+
+    hideSideBar() {
+        this.props.formUser({
+            name: '',
+            username: '',
+            email: '',
+            confirmEmail: '',
+            profile: '',
+            service: ''
+        });
+        this.props.hide();
+        this.loadUsers();
+    }
+
+
+    handleDelete() {
+        this.setState({ show_modal: true });
+    }
+
+    setModal(status) {
+        this.setState({ show_modal: status });
+    }
+
+    removeUser() {
+        const { t } = this.props;
+        UserActions.triggerRemoval(this.state.user, () => {
+            this.hideSideBar();
+            toaster.success(t('users:alerts.user_remove'), 4000);
+            this.setState({ show_modal: false });
+        });
+    }
+
+    checkName(name) {
+        const regex = /^([ \u00c0-\u01ffa-zA-Z'\-])+$/;
+        return !regex.test(name);
+    }
+
+    checkUsername(username) {
+        const regex = /^([a-z0-9_])+$/;
+        return !regex.test(username);
+    }
+
+    checkEmail(email) {
+        const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return !regex.test(String(email)
+            .toLocaleLowerCase());
+    }
+
+    checkConfirmEmail(email, confirmEmail) {
+        return !(email === confirmEmail);
+    }
+
+    fieldValidation(user, field) {
+        const tmpState = JSON.parse(JSON.stringify(this.state));
+        tmpState.user = user;
+
+        if (field === 'name') {
+            tmpState.isInvalid.name = this.checkName(user[field]);
+        } else if (field === 'username') {
+            tmpState.isInvalid.username = this.checkUsername(user[field]);
+        } else if (field === 'email' || field === 'confirmEmail') {
+            if (field === 'email') tmpState.isInvalid.email = this.checkEmail(String(user[field]));
+            tmpState.isInvalid.confirmEmail = this.checkConfirmEmail(user.email, user.confirmEmail);
+        }
+        this.setState(tmpState);
+    }
+
+    render() {
+        let myContent;
+        const cannotEdit = !ability.can('modifier', 'user');
+        const { t } = this.props;
+
+        const buttonsFooter = [
+            {
+                label: t('common:discard.label'),
+                click: this.hideSideBar,
+                type: 'secondary',
+            },
+        ];
+
+        if (!cannotEdit) {
+            if (this.props.edit &&  this.state.user.username !== 'admin') {
+                buttonsFooter.push({
+                    label: t('common:remove.label'),
+                    click: this.handleDelete,
+                    type: 'secondary',
+                });
+            }
+            if (this.props.edit)
+            {
+                buttonsFooter.push({
+                    label: t('common:save.label'),
+                    click: this.handleSave,
+                    color: 'red',
+                    type: 'primary',
+            });}
+            else    
+            {
+                buttonsFooter.push({
+                label: t('common:save.label'),
+                click: this.handleCreate,
+                color: 'red',
+                type: 'primary',
+            });}
+        }
+
+
+        if (this.props.visible) {
+            myContent = (
+                    <Fragment>
+                    <div className="pl20 pr20">
+                        <div id="auth-name" className="input-field icon-space">
+                            <input
+                                id="userName46465"
+                                value={this.state.user.username}
+                                name="username"
+                                disabled={this.props.edit || cannotEdit}
+                                onChange={this.handleChange}
+                                style={{ fontSize: '16px' }}
+                                className={
+                                    `validate${this.state.isInvalid.username ? ' invalid' : ''}`
+                                }
+                                maxLength="40"
+                            />
+                            <label
+                                htmlFor="userName"
+                                data-error={t('users:username.error')}
+                                className="active"
+                            >
+                                {t('users:username.label')}
+                            </label>
+                        </div>
+                        <div id="auth-usr" className="input-field">
+                            <input
+                                id="name"
+                                value={this.state.user.name}
+                                name="name"
+                                onChange={this.handleChange}
+                                style={{ fontSize: '16px' }}
+                                className={
+                                    `validate${this.state.isInvalid.name ? ' invalid' : ''}`
+                                }
+                                maxLength="40"
+                                disabled={cannotEdit}
+                            />
+                            <label
+                                htmlFor="name"
+                                data-error={t('users:name.error')}
+                                className="active"
+                            >
+                                {t('users:name.label')}
+                            </label>
+                        </div>
+                        <div id="auth-email" className="input-field">
+                            <input
+                                id="email"
+                                value={this.state.user.email}
+                                name="email"
+                                onChange={this.handleChange}
+                                style={{ fontSize: '16px' }}
+                                className={
+                                    `validate${this.state.isInvalid.email ? ' invalid' : ''}`
+                                }
+                                maxLength="40"
+                                disabled={cannotEdit}
+                            />
+                            <label
+                                htmlFor="email"
+                                data-error={t('users:email.error')}
+                                className="active"
+                            >
+                                {t('users:email.label')}
+                            </label>
+                        </div>
+                        <div id="auth-confirm" className="input-field">
+                            <input
+                                id="confirm-email"
+                                value={this.state.user.confirmEmail}
+                                name="confirmEmail"
+                                onChange={this.handleChange}
+                                style={{ fontSize: '16px' }}
+                                className={
+                                    `validate${
+                                        this.state.isInvalid.confirmEmail ? ' invalid' : ''}`
+                                }
+                                maxLength="40"
+                                disabled={cannotEdit}
+                            />
+                            <label
+                                htmlFor="confirm-email"
+                                data-error={t('users:confirm_email.error')}
+                                className="active"
+                            >
+                                {t('users:confirm_email.label')}
+                            </label>
+                        </div>
+                        <div>
+                            <label htmlFor="profile">{t('users:profile.label')}</label>
+                        </div>
+
+                        <div id="auth-select-role" className="input-field">
+                            <MaterialSelect
+                                id="flr_profiles"
+                                name="profile"
+                                value={this.state.user.profile}
+                                onChange={this.handleChange}
+                                isDisable={cannotEdit || this.props.edit || this.state.user.username === 'admin'}
+                            >
+                                <option value="" disabled>
+                                    {t('users:profile.alt')}
+                                </option>
+                                {this.props.groups.map(obj => (
+                                    <option value={obj.name} id={obj.name + '-option'}
+                                            key={obj.name + '-option'}>
+                                        {obj.name}
+                                    </option>
+                                ))}
+                            </MaterialSelect>
+                        </div>
+                    </div>
+                    </Fragment>);
+        }
+        return (
+            <ReactCSSTransitionGroup
+                transitionName="sidebar"
+                transitionAppear
+                transitionAppearTimeout={500}
+                transitionEnterTimeout={500}
+                transitionLeaveTimeout={500}
+            >
+               { this.props.visible ? (
+                <SideBarRight
+                    icon="user"
+                    title={this.props.edit ? t('users:title_sidebar.edit')
+                        : t('users:title_sidebar.new')}
+                    content={myContent}
+                    headerColor={'bg-gradient-light-blue'}
+                    visible
+                    buttonsFooter={buttonsFooter}
+                />
+                ) : null}
+                {this.state.show_modal ? (
+                    <RemoveModal
+                        name={t('users:user')}
+                        remove={this.removeUser}
+                        openModal={this.setModal}
+                    />
+                ) : (
+                    <div/>
+                )}
+            </ReactCSSTransitionGroup>
+        );
+    }
+}
 
 function SummaryItem(props) {
-  const selectedClass = "lst-entry-users " + (props.isActive ? " active" : "");
-  const name = ((props.user.name && (props.user.name.length > 0)) ? props.user.name : props.user.username);
-  return (
-    <div className={selectedClass} title="View details">
-     <div className="col hovered">
-       <div className="col s12">
-          <div className="col s9 title2 truncate">{name}</div>
-       </div>
-       <div className="col s12 paddingTop10">
-          <div className="col s3 openSans8">Service:</div>
-          <div className="col s9 text-right subtitle"><label className="badge center-align truncate">{props.user.service}</label></div>
-       </div>
-     </div>
-      <div className="col div-img">
-        {/* TODO set a custom image */}
-        <img src="images/user.png"/>
-      </div>
-      <div className="lst-entry-users-title col div-with-img">
-        <div className="title truncate">{name}</div>
-        <div className="subtitle truncate">{props.user.email}</div>
-      </div>
-    </div>
-  )
+    return (
+        <div className="card-size card-hover lst-entry-wrapper z-depth-2 mg0px pointer">
+            <div className="lst-entry-title col s12 bg-gradient-light-blue">
+                <img className="title-icon" src="images/generic-user-icon.png"/>
+                <div className="title-text truncate" title={props.user.name}>
+                    <span className="text">
+                        {props.user.name}
+                    </span>
+                </div>
+            </div>
+            <div className="attr-list">
+                <div className="attr-area light-background">
+                    <div className="attr-row">
+                        <div className="icon">
+                            <img src="images/usr-icon.png"/>
+                        </div>
+                        <div className="user-card attr-content" title={props.user.username}>
+                            <input className="truncate" type="text" value={props.user.username}
+                                   disabled/>
+                            <span>
+                                <Trans i18nKey="users:username.label"/>
+                            </span>
+                        </div>
+                    </div>
+                    <div className="attr-row">
+                        <div className="icon">
+                            <img src="images/email-icon.png"/>
+                        </div>
+                        <div className="user-card attr-content" title={props.user.email}>
+                            <input className="truncate" type="text" value={props.user.email}
+                                   disabled/>
+                            <span>
+                                <Trans i18nKey="users:email.label"/>
+                            </span>
+                        </div>
+                    </div>
+                    <div className="attr-row">
+                        <div className="icon">
+                            <img src="images/profile-icon.png"/>
+                        </div>
+                        <div className="user-card attr-content">
+                            <input
+                                className="truncate"
+                                type="text"
+                                value={props.user.profile}
+                                disabled
+                            />
+                            <span>
+                                <Trans i18nKey="users:profile.label"/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 class ListItem extends Component {
-  constructor(props) {
-    super(props);
-    this.handleDetail = this.handleDetail.bind(this);
-  }
+    constructor(props) {
+        super(props);
+        this.handleDetail = this.handleDetail.bind(this);
+    }
 
-  handleDetail(e) {
-    e.preventDefault();
-    this.props.detailedUser(this.props.user);
-  }
+    handleDetail(e) {
+        e.preventDefault();
+        this.props.editUser(this.props.user);
+    }
 
-  render() {
-    const active = (this.props.user.id == this.props.detail);
-    return (
-      <div className="col s12 no-padding clickable" id={this.props.user.id} onClick={this.handleDetail}>
-          <SummaryItem user={this.props.user} isActive={active}/>
-      </div>
-    )
-  }
+    render() {
+        const active = (this.props.user.id === this.props.detail);
+        return (
+            <div className="mg20px fl flex-order-2" id={this.props.user.id}
+                 onClick={this.handleDetail}>
+                <SummaryItem user={this.props.user} isActive={active}/>
+            </div>
+        );
+    }
 }
 
 
 class RemoveDialog extends Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.dismiss = this.dismiss.bind(this);
-    this.remove = this.remove.bind(this);
-  }
-
-  componentDidMount() {
-    // materialize jquery makes me sad
-    let modalElement = ReactDOM.findDOMNode(this.refs.modal);
-    $(modalElement).ready(function() {
-      $('.modal').modal();
-    })
-  }
-
-  dismiss(event) {
-    event.preventDefault();
-    let modalElement = ReactDOM.findDOMNode(this.refs.modal);
-    $(modalElement).modal('close');
-  }
-
-  remove(event) {
-    event.preventDefault();
-    let modalElement = ReactDOM.findDOMNode(this.refs.modal);
-    $(modalElement).modal('close');
-    this.props.callback(event);
-  }
-
-  render() {
-    return (
-      <div className="modal" id={this.props.target} ref="modal">
-        <div className="modal-content full">
-          <div className="row center background-info">
-            <div><i className="fa fa-exclamation-triangle fa-4x" /></div>
-            <div>You are about to remove this user.</div>
-            <div>Are you sure?</div>
-          </div>
-        </div>
-        <div className="modal-footer right">
-            <button type="button" className="btn-flat btn-ciano waves-effect waves-light" onClick={this.dismiss}>cancel</button>
-            <button type="submit" className="btn-flat btn-red waves-effect waves-light" onClick={this.remove}>remove</button>
-        </div>
-      </div>
-    )
-  }
-}
-
-
-class DetailItem extends Component {
-  constructor(props) {
-    super(props);
-
-    this.handleEdit = this.handleEdit.bind(this);
-    this.handleDismiss = this.handleDismiss.bind(this);
-    this.handleRemove = this.handleRemove.bind(this);
-  }
-
-  componentDidMount() {}
-
-  componentWillUnmount() {}
-
-  handleDismiss(e) {
-    e.preventDefault();
-    this.props.clearSelection();
-  }
-
-  handleEdit(e) {
-    e.preventDefault();
-    this.props.editUser(this.props.user.id);
-  }
-
-  handleRemove(e) {
-    e.preventDefault();
-    this.props.deleteUser(this.props.user);
-  }
-
-  render() {
-    return (
-      <span>
-        <div className="lst-user-detail" >
-          <div className="lst-line col s12">
-            <div className="col s3">
-                <p><img className="photo_big" src="images/user.png"/></p>
-            </div>
-            <div className="lst-user-title col s6">
-              <span>{this.props.user.name}</span>
-              <p className="subTitle">ID:<b>{this.props.user.id}</b></p>
-            </div>
-            <div className="lst-title col s3">
-              <div className="edit right inline-actions">
-                <a className="btn-floating waves-red right" onClick={this.handleEdit} title="Edit user">
-                  <i className="material-icons">mode_edit</i>
-                </a>
-                <a className="btn-floating waves-red right" onClick={(e) => {e.preventDefault(); $('#confirmDiag').modal('open');}}  title="Remove user">
-                  <i className="fa fa-trash" />
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="lst-user-line col s12">
-            <span className="field">Name</span>
-          </div>
-          <div className="lst-user-line col s12">
-            <span className='value'> {this.props.user.name} </span>
-          </div>
-          <div className="lst-user-line col s12">
-            <span className="field">Email</span>
-          </div>
-          <div className="lst-user-line col s12 data">
-            <span className='value'> {this.props.user.email} </span>
-          </div>
-          <div className="lst-user-line col s12">
-            <span className="field">Username</span>
-          </div>
-          <div className="lst-user-line col s12 data">
-            <span className='value'> {this.props.user.username} </span>
-          </div>
-          <div className="lst-user-line col s12">
-            <span className="field">Service</span>
-          </div>
-          <div className="lst-user-line col s12 data">
-            <span className='value'> {this.props.user.service} </span>
-          </div>
-          <div className="lst-user-line col s12">
-            <span className="field">Profile</span>
-          </div>
-          <div className="lst-user-line col s12 data">
-            <span className="value">{this.props.user.profile}</span>
-          </div>
-        </div>
-      </span>
-    )
-  }
-}
-
-function userDataValidate(field, value, edit) {
-  if (edit === undefined || edit === null) { edit = false; }
-
-  // TODO those should come from i18n
-  const mandatory = "You can't leave this empty.";
-  const alnum = "Please use only letters (a-z), numbers (0-9) and underscores (_).";
-  const email = "Please enter a valid email address.";
-  let handlers = {
-    email: function(value) {
-      const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-      if (value.length == 0) { return mandatory; }
-      return re.test(value) ? undefined : email;
-    },
-    username: function(value) {
-      const re = /^[a-z0-9_]+$/;
-      if (value.length == 0) { return mandatory; }
-      return re.test(value) ? undefined : alnum;
-    },
-    passwd: function(value) {
-      if (edit == true && value.length == 0) { return undefined; }
-      return (value.length == 0) ? mandatory : undefined;
-    },
-    name: function(value) {
-      return (value.length == 0) ? mandatory : undefined;
-    },
-    profile: function(value) {
-      return (value.length == 0) ? mandatory : undefined;
-    },
-    service: function(value) {
-      const re = /^[a-z0-9_]+$/;
-      if (value.length == 0) { return mandatory; }
-      return re.test(value) ? undefined : alnum;
-    }
-  }
-
-  if (field in handlers) {
-    const result = handlers[field](value);
-    return result;
-  }
-
-  return undefined;
-}
-
-const FormActions = alt.generateActions('set', 'update', 'edit', 'check', 'invalidate');
-class FStore {
-  constructor() {
-    this.user = {};
-    this.invalid = {};
-    this.edit = false;
-    this.bindListeners({
-      set: FormActions.SET,
-      update: FormActions.UPDATE,
-      handleEdit: FormActions.EDIT,
-      check: FormActions.CHECK,
-      invalidate: FormActions.INVALIDATE,
-    });
-    this.set(null);
-  }
-
-  set(user) {
-    if (user === null || user === undefined) {
-      this.user = {
-        name: "",
-        email: "",
-        username: "",
-        passwd: "",
-        service: "",
-        profile: "admin"
-      };
-      // map used to tell whether a field is invalid or not
-      this.invalid = {}
-    } else {
-      this.user = JSON.parse(JSON.stringify(user));
-      for (let k in this.user) {
-        if (this.user.hasOwnProperty(k)) {
-          this.invalid[k] = userDataValidate(k, this.user[k], this.edit);
-        }
-      }
-    }
-  }
-
-  check(field) {
-    if (this.user.hasOwnProperty(field)){
-      this.invalid[field] = userDataValidate(field, this.user[field], this.edit);
-    }
-  }
-
-  update(diff) {
-    this.user[diff.f] = diff.v;
-    this.invalid[diff.f] = userDataValidate(diff.f, diff.v, this.edit);
-  }
-
-  invalidate(map) {
-    this.invalid[map.key] = map.value;
-  }
-
-  handleEdit(flag) {
-    if (flag === undefined || flag === null) {
-      this.edit = false;
-    } else {
-      this.edit = flag;
-    }
-  }
-}
-var FormStore = alt.createStore(FStore, 'FormStore');
-
-class UserForm extends Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    return (
-      <AltContainer store={FormStore}>
-        <UserFormImpl {...this.props} />
-      </AltContainer>
-    )
-  }
-}
-
-class UserFormImpl extends Component {
-  constructor(props) {
-    super(props);
-    this.saveUser = this.saveUser.bind(this);
-    this.handleChange = this.handleChange.bind(this);
-  }
-
-  componentDidMount() {
-    Materialize.updateTextFields();
-  }
-
-  componentDidUpdate() {
-    Materialize.updateTextFields();
-  }
-
-  saveUser(e) {
-    e.preventDefault();
-    let valid = true;
-    let user = JSON.parse(JSON.stringify(this.props.user));
-    for (let k in user) {
-      user[k] = user[k].trim();
-      if (userDataValidate(k, user[k], this.props.edit) !== undefined) {
-        FormActions.check(k);
-        valid = false;
-      }
+        this.dismiss = this.dismiss.bind(this);
+        this.remove = this.remove.bind(this);
     }
 
-    if (valid) {
-      this.props.save(user);
-    } else {
-      Materialize.toast('Failed to validate user data', 4000);
+    componentDidMount() {
+        // materialize jquery makes me sad
+        const modalElement = ReactDOM.findDOMNode(this.refs.modal);
+        $(modalElement)
+            .ready(() => {
+                $('.modal')
+                    .modal();
+            });
     }
-  }
 
-  handleChange(e) {
-    e.preventDefault();
-    const f = e.target.name;
-    const v = e.target.value;
-    FormActions.update({f: f, v: v, e: this.props.edit});
-  }
-
-  render() {
-    return (
-      <span>
-        <form onSubmit={this.saveUser}>
-          <div className="row">
-            <div className="lst-line col s12">
-              <div className="col s2">
-                <p><img id="imgForm" src="images/user.png"/></p>
-              </div>
-              <div className="lst-user-title col s10">
-                <span>{this.props.title}</span>
-                <p className="subTitle"><b>ID:</b>{this.props.user.id}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="lst-user-detail row" >
-            <div className="lst-user-line col s12 input-field">
-              <MaterialInput id="fld_name" value={this.props.user.name}
-                             error={this.props.invalid['name']}
-                             name="name" onChange={this.handleChange}>
-                Name
-              </MaterialInput>
-            </div>
-            <div className="lst-user-line col s12 input-field">
-              <MaterialInput id="fld_email" value={this.props.user.email}
-                             error={this.props.invalid['email']}
-                             name="email" onChange={this.handleChange}>
-                Email
-              </MaterialInput>
-            </div>
-            <div className="lst-user-line col s12 input-field">
-              <MaterialInput id="fld_login" value={this.props.user.username}
-                             error={this.props.invalid['username']}
-                             name="username" onChange={this.handleChange}>
-                Username
-              </MaterialInput>
-            </div>
-            <div className="lst-user-line col s12 input-field">
-              <MaterialInput id="fld_passwd" value={this.props.user.passwd}
-                             error={this.props.invalid['passwd']} type="password"
-                             name="passwd" onChange={this.handleChange}>
-                Password
-              </MaterialInput>
-            </div>
-            <div className="lst-user-line col s6 input-field">
-              <MaterialInput id="fld_service" value={this.props.user.service}
-                             error={this.props.invalid['service']}
-                             name="service" onChange={this.handleChange}>
-                Service
-              </MaterialInput>
-            </div>
-            <div className="lst-user-line col s6 input-field">
-              <MaterialSelect id="flr_profile" name="profile"
-                              value={this.props.user.profile}
-                              onChange={this.handleChange} >
-                <option value="admin">admin</option>
-                <option value="user">user</option>
-              </MaterialSelect>
-              <label htmlFor="fld_profile">Profile type</label>
-            </div>
-          </div>
-
-          <div className="row right">
-            <div className="col">
-              <button type="submit" className="waves-light btn waves">
-                { this.props.loading ? (
-                  <i className="fa fa-circle-o-notch fa-spin fa-fw horizontal-center"/>
-                ) : (
-                  <span>Save</span>
-                )}
-              </button>
-            </div>
-            <div className="col">
-              <a onClick={this.props.dismiss} className="waves-light btn waves">Dismiss</a>
-            </div>
-          </div>
-        </form>
-      </span>
-    )
-  }
-}
-
-function errorTranslate(error) {
-  const messages = [
-    // TODO 'to' field should come from i18n
-    {from: "email already in use", to: "E-mail already in use", field: 'email'},
-    {from: "user already exists", to: "User already exists", field: 'username'}
-  ]
-
-  for (let i = 0; i < messages.length; ++i) {
-    if (error === messages[i].from) {
-      FormActions.invalidate({key: messages[i].field, value: messages[i].to});
-      break;
+    dismiss(event) {
+        event.preventDefault();
+        const modalElement = ReactDOM.findDOMNode(this.refs.modal);
+        $(modalElement)
+            .modal('close');
     }
-  }
+
+    remove(event) {
+        event.preventDefault();
+        const modalElement = ReactDOM.findDOMNode(this.refs.modal);
+        $(modalElement)
+            .modal('close');
+        this.props.callback(event);
+    }
+
+    render() {
+        return (
+            <div className="modal" id={this.props.target} ref="modal">
+                <div className="modal-content full">
+                    <div className="row center background-info">
+                        <div><i className="fa fa-exclamation-triangle fa-4x"/></div>
+                        <div><Trans i18nKey="users:alerts.qst_remove"/></div>
+                        <div><Trans i18nKey="users:alerts.qst_confirm_remove"/></div>
+                    </div>
+                </div>
+                <div className="modal-footer right">
+                    <button
+                        type="button"
+                        className="btn-flat btn-ciano waves-effect waves-light"
+                        onClick={this.dismiss}
+                    >
+                        <Trans i18nKey="discard.label"/>
+                    </button>
+                    <button
+                        type="submit"
+                        className="btn-flat btn-red waves-effect waves-light"
+                        onClick={this.remove}
+                    >
+                        <Trans i18nKey="remove.label"/>
+                    </button>
+                </div>
+            </div>
+        );
+    }
 }
 
 class UserList extends Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = {
-      detail: undefined,
-      edit: undefined,
-      create: undefined,
-      height: undefined
-    };
+        this.state = {
+            create: false,
+            edit: false,
+            user: {
+                name: '',
+                username: '',
+                email: '',
+                confirmEmail: '',
+                profile: '',
+                service: ''
+            }
+        };
 
-    this.clearSelection = this.clearSelection.bind(this);
-    this.detailedUser = this.detailedUser.bind(this);
-    this.editUser = this.editUser.bind(this);
-    this.updateUser = this.updateUser.bind(this);
-    this.deleteUser = this.deleteUser.bind(this);
-    this.handleCreate = this.handleCreate.bind(this);
-    this.newUser = this.newUser.bind(this);
-  }
-
-  clearSelection() {
-    let temp = this.state;
-    temp.edit = undefined;
-    temp.detail = undefined;
-    temp.create = undefined;
-    this.setState(temp);
-    return true;
-  }
-
-  detailedUser(user) {
-    let temp = this.state;
-    temp.detail = user.id;
-    FormActions.edit(true);
-    FormActions.set(user);
-    temp.user = user;
-    temp.create = undefined;
-    temp.edit = undefined;
-    this.setState(temp);
-    return true;
-  }
-
-  editUser(id) {
-    if (this.state.detail === id) {
-      let temp = this.state;
-      temp.edit = id;
-      temp.create = undefined;
-      this.setState(temp);
-      return true;
+        this.editUser = this.editUser.bind(this);
+        this.createUser = this.createUser.bind(this);
+        this.hideSideBar = this.hideSideBar.bind(this);
+        this.formUser = this.formUser.bind(this);
     }
-    return false;
-  }
 
-  updateUser(user) {
-    UserActions.triggerUpdate(user, () => {
-      Materialize.toast("User updated", 4000);
-      FormActions.update({f: 'passwd', v: ''});
-    }, (data) => {
-      errorTranslate(data.message);
-      Materialize.toast("Failed to update user", 4000);
-    });
-  }
+    static getDerivedStateFromProps(props, state) {
+        if (props.createUser && !state.create) {
+            return {
+                create: true,
+                edit: false,
+                user: {
+                    name: '',
+                    username: '',
+                    email: '',
+                    confirmEmail: '',
+                    profile: '',
+                    service: ''
+                }
+            };
+        }
+        // Return null to indicate no change to state.
+        return null;
+    }
 
-  deleteUser(e) {
-    e.preventDefault();
-    UserActions.triggerRemoval(this.state.user, () => {
-      Materialize.toast('User removed', 4000);
-    });
-    const state = {detail: undefined, create: undefined};
-    this.setState(state);
-  }
+    formUser(user) {
+        let temp = this.state;
+        temp.create = true;
+        temp.edit = false;
+        temp.user = user;
+        this.setState(temp);
 
-  handleCreate() {
-    FormActions.edit(false);
-    FormActions.set(null);
-    this.clearSelection();
-    let temp = this.state;
-    temp.create = true;
-    this.setState(temp);
-    return true;
-  }
+    }
 
-  newUser(user) {
-    UserActions.addUser(user, (data) => {
-      Materialize.toast('User created', 4000);
-      FormActions.update({f: 'passwd', v: ''});
-      this.setState({detail: undefined, create: undefined, edit: undefined});
-    }, (data) => {
-      errorTranslate(data.message);
-      Materialize.toast("Failed to create user", 4000);
-    });
-  }
+    editUser(user) {
+        const temp = this.state;
+        temp.user = user;
+        temp.user.confirmEmail = user.email;
+        temp.create = false;
+        temp.edit = true;
+        this.setState(temp);
+        this.props.visibility(true, 'edit');
+    }
 
-  componentDidMount() {
-    // TODO: use this later on to set the number of entries to be presented in each page
-    // const height = document.getElementsByClassName('userCanvas')[0].clientHeight;
-  }
+    createUser() {
+        const temp = this.state;
+        temp.create = true;
+        temp.edit = false;
+        temp.user = {
+            name: '',
+            username: '',
+            email: '',
+            confirmEmail: '',
+            profile: '',
+            service: '',
+        };
+        this.setState(temp);
+    }
 
-  render() {
-    let detailAreaStatus = "";
-    if (this.state.create || this.state.edit) detailAreaStatus = " create";
-    if (this.state.detail) detailAreaStatus = " selected";
-    const prevPageClass = (this.props.isFirst ? " inactive" : "");
-    const nextPageClass = (this.props.isLast ? " inactive" : "");
+    hideSideBar() {
+        this.props.visibility(false, 'hide');
+    }
 
-
-    return (
-      <div className="fill">
-        <RemoveDialog callback={this.deleteUser} target="confirmDiag" />
-        <div className="flex-wrapper">
-          {/* TODO promote this */}
-          <div className="row z-depth-2 userSubHeader p0" id="inner-header">
-            <div className="col s4 m4 main-title">List of Users</div>
-            <div className="col s2 m2 header-card-info">
-              <div className="title"># Users</div>
-              <div className="subtitle">{this.props.total}</div>
-            </div>
-            <div className="col s4 header-card-info"></div>
-            <div className="col s6 m2 button">
-              <a id="btnNewUser" className="waves-effect waves-light btn-flat" onClick={this.handleCreate}>New User</a>
-            </div>
-          </div>
-
-          <div className={"fill row userCanvas z-depth-2" + detailAreaStatus}>
-            { this.props.values.length > 0 ? (
-                <div className="col s4 no-padding" id="user-list">
-                  { this.props.values.map((user) =>
-                      <ListItem user={user}
+    render() {
+        const {t, user : {service}} = this.props;
+        return (
+                <div className="full-height flex-container pos-relative overflow-x-hidden">
+                    <AltContainer store={UserStore}>
+                        <SideBar userTenant={service} {...this.state} t={t} hide={this.hideSideBar}
+                                visible={this.props.visible}
+                                formUser={this.formUser}/>
+                    </AltContainer>
+                    <RemoveDialog callback={this.deleteUser} target="confirmDiag"/>
+                    <div className="col s12 lst-wrapper w100 hei-100-over-scroll flex-container">
+                        {this.props.values.map(user => (
+                            <ListItem
+                                user={user}
                                 key={user.id}
                                 detail={this.state.detail}
-                                detailedUser={this.detailedUser}/>
-                  )}
-                  <div className="col s4 userCanvasFooter">
-                    <div id="labelShowing" className="col s12 m6">Showing {this.props.values.length} of {this.props.total}</div>
-                    <div id="prevPageId" className="col s6 m3 clickable">
-                      <a className={prevPageClass} onClick={this.props.prev}><i className="fa fa-chevron-left paddingRight10"></i>PREV</a>
-                    </div>
-                    <div id="nextPageId" className="col s6 m3 clickable">
-                      <a className={nextPageClass} onClick={this.props.next}>NEXT<i className="fa fa-chevron-right paddingLeft10"></i></a>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="col s4 background-info">
-                  <span className="background-info">No configured users</span>
-                </div>
-              )
-            }
-
-            <div className={"col s8" + detailAreaStatus} id="detail-area">
-              {this.state.create != undefined ? (
-                  <UserForm dismiss={this.clearSelection}
-                            save={this.newUser}
-                            edit={false}
-                            error={this.props.error}
-                            loading={this.props.loading}
-                            title="New User" />
-              ) : this.state.edit != undefined ? (
-                  <UserForm dismiss={this.clearSelection}
-                            save={this.updateUser}
-                            edit={true}
-                            error={this.props.error}
-                            loading={this.props.loading}
-                            title={this.state.user.name} />
-                  ) : (
-                  this.state.detail != undefined ? (
-                    <DetailItem user={this.state.user}
                                 editUser={this.editUser}
-                                clearSelection={this.clearSelection}
-                                deleteUser={this.deleteUser}/>
-                  ) : (
-                    <div className="initialUserMessage">
-                      <p>Select a user</p>
-                      <p>to see its details</p>
-                    </div>
-                  ))}
+                            />
+                        ))}
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+        );
+    }
 }
 
 function UserFilter(props) {
-  const filter = props.filter;
+    const filter = props.filter;
 
-  // parse the given field, searching for special selectors on the form <field name>:<value>
-  const tokens = filter.match(/([a-z]+)\W*:\W*(\w+)\W*/g);
-  let parsed = undefined;
-  if (tokens !== null) {
-    parsed = tokens.map((t) => {
-      const k = t.match(/([a-z]+)\W*:\W*(\w+)\W*/);
-      if (k !== null){
-        return {id: k[1], val: k[2].toLowerCase()};
-      } else {
-        return null;
-      }
-    });
-  }
-
-  // does the actual filtering
-  const filteredList = props.users.filter(function(e) {
-    if (tokens !== undefined && parsed !== undefined) {
-      let match = true;
-      for (let i = 0; i < parsed.length; i++) {
-        if (e.hasOwnProperty(parsed[i].id)) {
-          // all special selectors must match.
-          match = match && e[parsed[i].id].toLowerCase().includes(parsed[i].val)
-        }
-      }
-      return match;
-    } else {
-      // if no special selector was found in the search box, use the whole search term to compare
-      // to selected user fields.
-      return (
-        e.name.toLowerCase().includes(filter) ||
-        e.username.toLowerCase().includes(filter) ||
-        e.service.toLowerCase().includes(filter)
-      )
+    // parse the given field, searching for special selectors on the form <field name>:<value>
+    const tokens = filter.match(/([a-z]+)\W*:\W*(\w+)\W*/g);
+    let parsed;
+    if (tokens !== null) {
+        parsed = tokens.map((t) => {
+            const k = t.match(/([a-z]+)\W*:\W*(\w+)\W*/);
+            if (k !== null) {
+                return {
+                    id: k[1],
+                    val: k[2].toLowerCase()
+                };
+            }
+            return null;
+        });
     }
-  });
 
-  return (
-    <Paginator values={filteredList} entriesPerPage={6}>
-      {/* Paginator forwards paginated values into UserList */}
-      <UserList error={props.error} total={props.users.length}/>
-    </Paginator>
-  )
+    // does the actual filtering
+    const filteredList = props.users.filter((e) => {
+        if (tokens !== undefined && parsed !== undefined) {
+            let match = true;
+            for (let i = 0; i < parsed.length; i++) {
+                if (e.hasOwnProperty(parsed[i].id)) {
+                    // all special selectors must match.
+                    match = match && e[parsed[i].id].toLowerCase()
+                        .includes(parsed[i].val);
+                }
+            }
+            return match;
+        }
+        // if no special selector was found in the search box, use the whole search term to compare
+        // to selected user fields.
+        return (
+            e.name.toLowerCase()
+                .includes(filter)
+            || e.name.includes(filter)
+            || e.username.toLowerCase()
+                .includes(filter)
+            || e.email.toLowerCase()
+                .includes(filter)
+            || e.profile.toLowerCase()
+                .includes(filter)
+        );
+    });
+
+
+    return (
+        <UserList values={filteredList} {...props} />
+    );
 }
+
+class UsersContent extends Component {
+    constructor() {
+        super();
+        this.state = {
+            filter: '',
+            createUser: false,
+            visible: false
+        };
+        this.filterChange = this.filterChange.bind(this);
+        this.newUser = this.newUser.bind(this);
+        this.visibility = this.visibility.bind(this);
+    }
+
+    // Uses Users' internal state as store for the filter field. No sync issues since the
+    // rendering of the affected view is done on the lower order compoenent (UserFilter).
+    filterChange(e) {
+        this.setState({ filter: e });
+    }
+
+    newUser() {
+        const tmp = this.state;
+        tmp.createUser = true;
+        this.setState(tmp);
+        this.visibility(true, 'new');
+    }
+
+    visibility(bool, operation) {
+        const tmp = this.state;
+        if (operation !== 'new') tmp.createUser = false;
+        tmp.visible = bool;
+        this.setState(tmp);
+    }
+
+    componentDidMount() {
+        UserActions.fetchUsers.defer();
+        GroupActions.fetchGroups.defer();
+    }
+
+    render() {
+        const { t } = this.props;
+        return (
+            <div className="full-device-area">
+                <AltContainer store={UserStore}>
+                    <NewPageHeader title={t('users:title')} subtitle={t('users:title')}
+                                    icon='user'>
+                    <OperationsHeader newUser={this.newUser} {...this.props}/>
+                    </NewPageHeader>
+                    <UserFilter filter={this.state.filter} {...this.state} {...this.props}
+                                visibility={this.visibility}/>
+                </AltContainer>
+            </div>
+        );
+
+    }
+}
+
 
 class Users extends Component {
-  constructor() {
-    super();
-    this.state = { filter: '' };
-    this.filterChange = this.filterChange.bind(this);
-  }
-
-  // Uses Users' internal state as store for the filter field. No sync issues since the
-  // rendering of the affected view is done on the lower order compoenent (UserFilter).
-  filterChange(e) {
-    this.setState({ filter: e });
-  }
-
-  componentDidMount() {
-    if(LoginStore.getState().user.profile == "admin"){
-      UserActions.fetchUsers.defer();
+    constructor(props) {
+        super(props);
     }
-  }
 
-  render() {
-    if(LoginStore.getState().user.profile == "admin") {
-      return (
-        <span id="userMain" className="flex-wrapper">
-          <PageHeader title="Auth" subtitle="Users">
-            <Filter onChange={this.filterChange} />
-          </PageHeader>
-          <AltContainer store={UserStore} >
-            <UserFilter filter={this.state.filter} />
-          </AltContainer>
-        </span>
-      );
-    } else {
-      return (
-        <span id="userMain" className="flex-wrapper">
-         <AutheticationFailed />
-        </span>
-      );
+    render() {
+        return (
+            <AltContainer store={LoginStore}>
+                <UsersContent {...this.props}/>
+            </AltContainer>
+        );
     }
-  }
 }
 
-export default Users;
+
+function OperationsHeader(props) {
+    const { t } = props;
+    return (
+        <div className="col s12 pull-right pt10">
+            <Can do="modifier" on="user">
+                <DojotBtnLink
+                    responsive="true"
+                    onClick={props.newUser}
+                    label={t('users:header_btn_new.label')}
+                    alt={t('users:header_btn_new.alt')}
+                    icon="fa fa-plus"
+                    className="w130px"
+                />
+            </Can>
+        </div>
+
+    );
+}
+
+export default withNamespaces()(Users);

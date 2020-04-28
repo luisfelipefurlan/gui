@@ -1,36 +1,52 @@
-import alt from  "../alt";
+/* eslint-disable */
+import alt from '../alt';
 import util from '../comms/util';
+import LoginStore from '../stores/LoginStore';
 
 class TrackingActions {
-  fetch(device_id, history_length) {
-    const attrs = ['lat', 'lng'];
-    function getUrl() {
-      if (history_length === undefined) { history_length = 500; }
-      let url = '/history/device/' + device_id + '/history' + '?lastN=' + history_length;
-      attrs.map((attr) => {url += '&attr=' + attr});
-      return url;
-    }
+    fetch(device_id, attrName, history_length) {
+        function getUrl() {
+           return '/history/device/' + device_id + '/history?lastN=' + history_length + '&attr=' + attrName;
+        }
 
-    return (dispatch) => {
-      dispatch();
-      util._runFetch(getUrl(), {method: 'get'})
-        .then((reply) => {
-          let history = {device_id: device_id, data: []};
-          for (let i = 0; i < reply.lat.length; i++) {
-            let data = {device_id: device_id};
-            if (reply.lat[i].value !== "nan" && reply.lng[i].value !== "nan") {
-              data.position = [parseFloat(reply.lat[i].value), parseFloat(reply.lng[i].value)];
+        function parserPosition(position) {
+            const parsedPosition = position.split(',');
+            if (parsedPosition.length > 1) {
+                return [parseFloat(parsedPosition[0]), parseFloat(parsedPosition[1])];
             }
-            history.data.push(data);
-          }
+        }
 
-          this.set(history);
-        })
-        .catch((error) => {console.error("failed to fetch data", error);});
+        return (dispatch) => {
+            dispatch();
+
+            const service = LoginStore.getState().user.service;
+            const config = {
+                method: 'get',
+                headers: new Headers({
+                    'fiware-service': service,
+                    'fiware-servicepath': '/',
+                }),
+            };
+
+            util._runFetch(getUrl(), config)
+                .then((reply) => {
+                    const history = { device_id, data: [] };
+                    for (const k in reply) {
+                        const data = { device_id };
+                        if (reply[k].value !== null && reply[k].value !== undefined) {
+                            data.position = parserPosition(reply[k].value);
+                            data.timestamp = util.iso_to_date(reply[k].ts);
+                        }
+                        history.data.push(data);
+                    }
+                    this.set(history);
+                })
+                .catch((error) => { console.error('failed to fetch data', error); });
+        };
     }
-  }
 
-  set(history){ return history; }
-  dismiss(device_id){ return device_id; }
+    set(history) { return history; }
+
+    dismiss(device_id) { return device_id; }
 }
 alt.createActions(TrackingActions, exports);

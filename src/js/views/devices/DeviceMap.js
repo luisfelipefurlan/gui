@@ -1,266 +1,250 @@
+/* eslint-disable */
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
-import deviceManager from '../../comms/devices/DeviceManager';
+import Sidebar from '../../components/DeviceRightSidebar';
+import { Filter } from "../utils/Manipulation";
+import { SmallPositionRenderer } from "../utils/Maps";
+import { Loading } from '../../components/Loading';
 
-import util from "../../comms/util/util";
-import DeviceStore from '../../stores/DeviceStore';
-import DeviceActions from '../../actions/DeviceActions';
-import TemplateStore from '../../stores/TemplateStore';
-import TemplateActions from '../../actions/TemplateActions';
-import MeasureActions from '../../actions/MeasureActions';
-import MeasureStore from '../../stores/MeasureStore';
-import SideBar from "../../components/DeviceFilterMenu";
-import {SubHeader, SubHeaderItem} from "../../components/SubHeader";
+import TrackingActions from '../../actions/TrackingActions';
+import MapPositionActions from "../../actions/MapPositionActions";
+import { withNamespaces } from 'react-i18next';
 
-import { PageHeader } from "../../containers/full/PageHeader";
+let activeTracks = [];
 
-import AltContainer from 'alt-container';
-
-import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
-import { Link } from 'react-router'
-
-import { LayerGroup, LayersControl, Map, TileLayer, Marker, Popup,Tooltip, Point } from 'react-leaflet';
-import { divIcon } from 'leaflet';
-import { ImageOverlay , latLngBounds } from 'react-leaflet'
-
-import ReactResizeDetector from 'react-resize-detector';
-
-var darkBluePin = L.divIcon({className: 'icon-marker bg-dark-blue'});
-var lightBluePin = L.divIcon({className: 'icon-marker bg-light-blue'});
-var greyishBluePin = L.divIcon({className: 'icon-marker bg-greyish-blue'});
-var bluePin = L.divIcon({className: 'icon-marker bg-blue'});
-var orangePin = L.divIcon({className: 'icon-marker bg-orange'});
-var blackPin = L.divIcon({className: 'icon-marker bg-black'});
-var redPin = L.divIcon({className: 'icon-marker bg-red'});
-
-class PositionRenderer extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      layerLoaded: false,
-      visible: false,
-      selected_device_id : -1,
-      isTerrain: false,
+class DeviceMapWrapperComponent extends Component {
+    constructor(props) {
+        super(props);
+        this.didMount = false;
     }
 
-    this._handleClick = this._handleClick.bind(this);
-    this._handleMoveStart = this._handleMoveStart.bind(this);
-    this._handleContextMenu = this._handleContextMenu.bind(this);
-    this._handleTracking = this._handleTracking.bind(this);
-
-    this.setTiles = this.setTiles.bind(this);
-  }
-
-  _handleTracking() {
-    const layer = this.state.layerLoaded;
-    this.setState({ layerLoaded: !layer, });
-  }
-  // context menu based at
-  // https://codepen.io/devhamsters/pen/yMProm
-
-  _handleClick(e) {
-      const visible = this.state.visible;
-      event = e.originalEvent;
-      const wasOutside = !(event.target.contains === this.root);
-
-      if (wasOutside && visible) this.setState({ visible: false, });
-  };
-
-  _handleMoveStart() {
-     const visible = this.state.visible;
-     if (visible) this.setState({ visible: false, });
-  };
-
-  _handleContextMenu(e, device_id) {
-
-    event = e.originalEvent;
-    event.preventDefault();
-
-    this.setState({ visible: true , selected_device_id: parseInt(device_id)});
-
-    // this.refs.map.leafletElement.locate()
-    const clickX = event.clientX;
-    const clickY = event.clientY;
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-    const rootW = this.root.offsetWidth;
-    const rootH = this.root.offsetHeight;
-
-    const right = (screenW - clickX) > rootW;
-    const left = !right;
-    const top = (screenH - clickY) > rootH;
-    const bottom = !top;
-    if (right)
-      this.root.style.left = `${clickX + 5}px`;
-    if (left)
-        this.root.style.left = `${clickX - rootW - 5}px`;
-    if (top)
-        this.root.style.top = `${clickY + 5}px`;
-    if (bottom)
-        this.root.style.top = `${clickY - rootH - 5}px`;
-
-  };
-
-  resize() {
-    if (this.leafletMap !== undefined) {
-      this.leafletMap.leafletElement.invalidateSize();
-    }
-  }
-
-  setTiles(isMap) {
-    this.setState({isTerrain: isMap});
-  }
-
-  render() {
-    function NoData() {
-      return (
-        <div className="full-height valign-wrapper background-info subtle relative graph">
-          <div className="horizontal-center">
-            <i className="material-icons">report_problem</i>
-            <div>No position data available</div>
-          </div>
-        </div>
-      )
+    componentDidMount() {
+        let filter = {
+            sortBy: 'label',
+            page_size: 5000,
+            page_num: 1
+         };
+         MapPositionActions.fetchDevices.defer(filter);
+         this.didMount = true; // I really don't like it, any ideas to change it?
     }
 
-    function getPinColor(p) {
-      return darkBluePin;
+    render() {
+        if (!this.didMount || this.props.positions.loading) {
+          return <Loading />
+        }
+
+        const { t } =this.props;
+     
+        return (
+            <DeviceMap Config={this.props.configs} trackedDevices={this.props.measures.tracking} devices={this.props.positions.devicesPos} showFilter={this.props.showFilter} dev_opex={this.props.dev_opex} t={t}/>
+        );
     }
-
-    let parsedEntries = this.props.devices.reduce((result, k) => {
-      if (k.position !== undefined) {
-        result.push({id:k.id, pos:k.position, pin:getPinColor(k), name: k.label});
-      }
-      return result;
-    }, []);
-
-
-    if (parsedEntries.length == 0) {
-      return (<NoData />);
-    }
-    const contextMenu = this.state.visible ? (
-      <div ref={ref => {this.root = ref}} className="contextMenu">
-          <div className="contextMenu--option">State : </div>
-          <div className="contextMenu--separator" />
-          <Link to={"/device/id/" + this.state.selected_device_id + "/detail"} title="View details">
-            <div className="contextMenu--option"><i className="fa fa-fa-info-circle" />Details</div>
-          </Link>
-          <div className="contextMenu--option"  onClick={this._handleTracking}><i className="fa fa-compass" />Tracking</div>
-      </div>
-    ) : null
-
-    return (
-      <Map center={parsedEntries[0].pos} zoom={13} ref={m => {this.leafletMap = m;}}   onContextMenu={this._handleClick}  onMoveStart={this._handleMoveStart}>
-        <LayerBox> </LayerBox>
-        {contextMenu}
-        <ReactResizeDetector handleWidth onResize={this.resize.bind(this)} />
-        <div className="mapOptions col s12">
-          <div className="mapView" onClick = {() => this.setTiles(true)}>Terrain</div>
-          <div className="satelliteView" onClick = {() => this.setTiles(false)}>Satellite</div>
-        </div>
-        {this.state.isTerrain ? (
-          <TileLayer url = 'https://api.mapbox.com/styles/v1/mapbox/streets-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoiY2ZyYW5jaXNjbyIsImEiOiJjajhrN3VlYmowYXNpMndzN2o2OWY1MGEwIn0.xPCJwpMTrID9uOgPGK8ntg'
-          attribution = '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> and Mapbox contributors'/>
-        ) : (
-          <TileLayer url = 'https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v9/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZm1lc3NpYXMiLCJhIjoiY2o4dnZ1ZHdhMWg5azMycDhncjdqMTg1eiJ9.Y75W4n6dTd9DOpctpizPrQ'
-          attribution = '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> and Mapbox contributors' />
-        )}
-
-        {parsedEntries.map((k) => (
-          <Marker
-           onContextMenu={(e) => { this._handleContextMenu(e, k.id); }}
-           position={k.pos} key={k.id} icon={k.pin}  >
-          <Tooltip>
-            <span>
-             {k.id }: {k.name}
-            </span>
-          </Tooltip>
-          </Marker>
-        ))}
-      </Map>
-    )
-  }
 }
 
-class LayerBox extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {visible:true};
-    this.toggleLayer = this.toggleLayer.bind(this);
-  }
 
-  toggleLayer() {
-    this.setState({visible:!this.state.visible});
-  }
-
-  render() {
-
-    const layerMapBounds = L.latLngBounds([
-        [-20.90974,-48.83651],
-        [-21.80963,-47.11802]
-    ]);
-
-    const layerOpacity = 0.3;
-    const imageoverlay = this.state.visible ? (
-      <ImageOverlay
-        opacity={layerOpacity}
-        bounds={layerMapBounds}
-        url='images/layers/files/Combined.png'
-      /> ) : null
-
-    return (
-      <div className="col s12">
-        <div className="layer-div" onClick={this.toggleLayer}>
-          <img src='images/layers.png' />
-        </div>
-        {imageoverlay}
-      </div>
-    )
-  }
-}
 
 class DeviceMap extends Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.checkingClick = this.checkingClick.bind(this);
-  }
+        this.state = {
+            isDisplayList: true,
+            filter: '',
+            displayMap: {},
+            selectedDevice: {}
+        };
 
-  checkingClick(event) {
-  }
+        this.handleViewChange = this.handleViewChange.bind(this);
+        this.showSelected = this.showSelected.bind(this);
+        this.selectedDevice = this.selectedDevice.bind(this);
+        this.toggleTracking = this.toggleTracking.bind(this);
+        this.countVisibleDevices = this.countVisibleDevices.bind(this);
+        this.showAll = this.showAll.bind(this);
+        this.hideAll = this.hideAll.bind(this);
+        this.toggleVisibility = this.toggleVisibility.bind(this);
 
-  render() {
-    // TODO refactor this away
-    let filteredList = []
-    if ((this.props.devices !== undefined) && (this.props.devices !== null)) {
-      for (let k in this.props.devices) {
-        if (this.props.devices.hasOwnProperty(k)){
-          filteredList.push(this.props.devices[k]);
-        }
-      }
+        this.staticDevices = [];
+        this.dynamicDevices = [];
+        this.activeTracks = [];
+        this.didMount = false;
     }
 
-    const device_icon  = (<img src='images/icons/chip.png' />)
-    const location_icon  = (<img src='images/icons/location.png' />)
-    const location_active_icon  = (<img src='images/icons/location_active.png' />)
+    countVisibleDevices(devs) {
+        let count = 0;
+        for (const k in devs) {
+            if (this.state.displayMap[this.props.devices[k].id]) count++;
+        }
+        return count;
+    }
 
-    return (
-      <div className = "flex-wrapper">
-        <SubHeader>
-          <SubHeaderItem text={"Showing "+ filteredList.length + " devices "} icon={device_icon} active='false' clickable='false' />
-          <SubHeaderItem text="No tracking actived" icon={location_icon} active='false' clickable='false'  onClick='false'/>
-          <SubHeaderItem text="ID: XPTO" icon={location_active_icon} active='true' clickable='true'  onClick={this.checkingClick} />
-          {this.props.toggle}
-        </SubHeader>
-        <div className="deviceMapCanvas col m12 s12 relative">
-          <PositionRenderer devices={filteredList} />
-          <div className="col devicePainel">
-            <SideBar devices={this.props.devices} />
-          </div>
-        </div>
-      </div>
-    )
-  }
+    // shouldComponentUpdate(nextProps, nextState) {
+    //     return nextProps.isFavourite != this.props.isFavourite;
+    // }
+
+    componentDidMount() {
+
+        this.showAll();
+
+        this.staticDevices = [];
+        this.dynamicDevices = [];
+
+        for (const k in this.props.devices) {
+            let device = this.props.devices[k];
+            if (device.has_dynamic_position) {
+                // request dynamic data and allow tracking
+                device.allow_tracking = true;
+                this.dynamicDevices.push(device);
+                TrackingActions.fetch.defer(device.dp_metadata.id,
+                    device.dp_metadata.attr_label,1);
+            }
+            if (device.has_static_position) {
+                device.allow_tracking = false;
+                this.staticDevices.push(device);
+            }
+        }
+        this.didMount = true;
+    }
+
+    handleViewChange() {
+        this.setState({ isDisplayList: !this.state.isDisplayList });
+    }
+
+    selectedDevice(device) {
+        const selectedDevice = this.state.selectedDevice;
+        if (selectedDevice.hasOwnProperty(device)) {
+            selectedDevice[device] = !selectedDevice[device];
+        } else {
+            selectedDevice[device] = true;
+        }
+        this.setState({ selectedDevice });
+    }
+
+    toggleVisibility(device_id) {
+        const displayMap = this.state.displayMap;
+        displayMap[device_id] = !displayMap[device_id];
+        this.setState({ displayMap });
+    }
+
+    hideAll() {
+        const displayMap = this.state.displayMap;
+        for (const k in displayMap) {
+            displayMap[k] = false;
+        }
+        this.setState({ displayMap });
+    }
+
+    showAll() {
+        const displayMap = {};
+        for (const k in this.props.devices) {
+            displayMap[this.props.devices[k].id] = true;
+        }
+        this.setState({ displayMap });
+    }
+
+
+    toggleTracking(device_id) {
+        let device = null;
+        for (const k in this.props.devices) {
+            device = this.props.devices[k];
+            if (device.id == device_id)
+               break;
+        }
+
+        if (!device.active_tracking)
+        {
+            // enabling device' tracking
+            TrackingActions.fetch.defer(device.dp_metadata.id,
+                device.dp_metadata.attr_label, 50);
+            device.active_tracking = true;
+            this.activeTracks.push(device_id);
+        }
+        else
+        {
+            // disabling device' tracking
+            device.active_tracking = false;
+            // removes device from array of activeTracks; 
+            this.activeTracks = this.activeTracks.filter(i => i !== device_id);
+            // request again the last geo of this devices;
+            TrackingActions.fetch.defer(device.dp_metadata.id,
+                device.dp_metadata.attr_label, 1);
+        }
+    }
+
+    showSelected(device) {
+        if (this.state.selectedDevice.hasOwnProperty(device)) {
+            return this.state.selectedDevice[device];
+        }
+        return false;
+    }
+
+    render() {
+        const { t } =this.props;
+        if (!this.didMount)
+            return <Loading />;
+
+        for (const k in this.dynamicDevices) {
+            const device = this.dynamicDevices[k];
+            if (this.props.trackedDevices.hasOwnProperty(device.id) && this.state.displayMap[device.id]) {
+                this.dynamicDevices[k].dy_positions = [];
+                this.dynamicDevices[k].dy_positions = this.props.trackedDevices[device.id].map(
+                  (e, k) => {
+                    const updated = e;
+                    updated.id = device.id;
+                    updated.unique_key = `${device.id}_${k}`;
+                    updated.label = device.label;
+                    updated.timestamp = e.timestamp;
+                    return updated;
+                  }
+                );
+            }
+        }
+
+        this.metaData = { alias: t('devices:device') };
+        this.props.dev_opex.setFilterToMap();
+
+        // remove or not depending visibility
+        for (const k in this.staticDevices) {
+            this.staticDevices[k].is_visible = this.state.displayMap[this.staticDevices[k].id];
+        }
+
+        for (const k in this.dynamicDevices) {
+            this.dynamicDevices[k].is_visible = this.state.displayMap[this.dynamicDevices[k].id];
+        }
+
+        let deviceWithData = this.props.devices.filter(dev => dev.has_static_position || dev.dy_positions.length > 0);
+        const nVisibleDevices = this.countVisibleDevices(deviceWithData);
+        const displayDevicesCount = `${t('text.showing')} ${nVisibleDevices} ${t('text.of')} ${deviceWithData.length} ${t('devices:device')}(s)`;
+        return <div className="fix-map-bug">
+            <div className="flex-wrapper">
+              <div className="map-filter-box">
+                <Filter showPainel={this.props.showFilter} metaData={this.metaData} ops={this.props.dev_opex} fields={withNamespaces()(DevFilterFields)} />
+              </div>
+
+              <div className="deviceMapCanvas deviceMapCanvas-map col m12 s12 relative">
+                <SmallPositionRenderer showLayersIcons={true} staticDevices={this.staticDevices} dynamicDevices={this.dynamicDevices} toggleTracking={this.toggleTracking} allowContextMenu={true} showPolyline={true} config={this.props.Config} />
+                <Sidebar deviceInfo={displayDevicesCount} toggleVisibility={this.toggleVisibility} devices={deviceWithData} hideAll={this.hideAll} showAll={this.showAll} displayMap={this.state.displayMap} />
+              </div>
+            </div>
+          </div>;
+    }
 }
 
-export { DeviceMap };
+class DevFilterFields extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        const { t } =this.props;
+        return <div className="col s12 m12">
+        <div className="col s5 m5">
+            <div className="dev_field_filter">
+                <label htmlFor="fld_device_name">{t('devices:title')}</label>
+                <input id="fld_device_name" type="text" className="form-control form-control-lg margin-top-mi7px" placeholder={t('text.name')} value={this.props.fields.label} name="label" onChange={this.props.onChange}  onKeyUp={this.props.KeyUp} />
+            </div>
+        </div>
+        <div className="col s1 m1" />
+        </div>;
+    }
+}
+const DeviceMapWrapper = withNamespaces()(DeviceMapWrapperComponent);
+export { DeviceMapWrapper };
