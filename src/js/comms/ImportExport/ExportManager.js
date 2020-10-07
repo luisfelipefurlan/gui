@@ -1,19 +1,16 @@
 import util from '../util/util';
+import { baseURL } from 'Src/config';
 
 class ExportManager {
-    constructor() {
-        this.baseUrl = '';
-    }
-
     export() {
         const headers = {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
+            Pragma: 'no-cache',
             'Content-Disposition': 'attachment; filename="download"',
         };
 
-        return util.GET(`${this.baseUrl}/export`, headers);
+        return util.GET(`${baseURL}export`, headers);
     }
 }
 

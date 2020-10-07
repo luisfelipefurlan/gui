@@ -1,17 +1,17 @@
 /* eslint-disable */
 import React, { Component } from 'react';
-import { Link, browserHistory } from 'react-router';
+import { Link, hashHistory } from 'react-router';
 import AltContainer from 'alt-container';
 import MenuActions from '../../actions/MenuActions';
 import { Trans, withNamespaces } from 'react-i18next';
 import MenuStore from '../../stores/MenuStore';
 import LoginStore from '../../stores/LoginStore';
 import LoginActions from '../../actions/LoginActions';
-import { ChangePasswordModal } from '../../components/Modal';
+import { ChangePasswordModal } from 'Components/Modal';
 import ConfigActions from "../../actions/ConfigActions";
 import ImportExportMain from '../../components/importExport/ImportExportMain';
 import ability from '../../components/permissions/ability';
-import { guiVersion } from '../../config';
+import {appURL, guiVersion} from 'Src/config';
 
 class Navbar extends Component {
     // TODO: header widgets should be received as children to this (Navbar) node
@@ -32,7 +32,7 @@ class Navbar extends Component {
     }
 
     render() {
-        if (this.props.user == undefined) {
+        if (this.props.user === undefined) {
             console.error('no active user session');
             return null;
         }
@@ -77,7 +77,7 @@ class RightSideBar extends Component {
     logout(event) {
         event.preventDefault();
         LoginActions.logout();
-        browserHistory.push('/');
+        hashHistory.push('/login');
     }
 
     dismiss(event) {
@@ -102,13 +102,13 @@ class RightSideBar extends Component {
     }
 
     render() {
-        if (this.props.user == undefined) {
+        if (this.props.user === undefined) {
             console.error('no active user session');
             return null;
         }
 
 
-        const gravatar = `https://www.gravatar.com/avatar/${btoa(this.props.user.username)}?d=identicon`;
+        // const gravatar = `https://www.gravatar.com/avatar/${btoa(this.props.user.username)}?d=identicon`;
         const { t } = this.props;
         const canSeeImportOrExport = ability.can('modifier', 'import')
             || ability.can('viewer', 'export')
@@ -128,7 +128,7 @@ class RightSideBar extends Component {
                             </div>
                         </div>
 
-                        {this.props.user.email != undefined && (
+                        {this.props.user.email !== undefined && (
                             <div>
                                 <div className="col s12 m12">
                                     <div className="logout-page-subtitle"> {t('email.label')}</div>
@@ -139,9 +139,9 @@ class RightSideBar extends Component {
                                         {this.props.user.email}
                                     </div>
                                 </div>
-                            </div>                            
+                            </div>
                         )}
-                        
+
                         <div className="col s12 m12">
                             <div className="logout-page-subtitle">{t('text.tenant')}</div>
                         </div>
@@ -263,14 +263,10 @@ class LeftSidebar extends Component {
     }
 
     handleClick(e) {
-
         if(width > 800){
             e.preventDefault();
             MenuActions.toggleLeft();
-        }else{
-            return
         }
-
     }
     componentDidUpdate(){
         LeftSidebar.createMenu();

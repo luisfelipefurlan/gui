@@ -5,6 +5,9 @@ import backend from 'i18next-xhr-backend';
 i18n.use(LanguageDetector)
     .use(backend)
     .init({
+        backend: {
+            loadPath: '/v2/locales/{{lng}}/{{ns}}.json',
+        },
         resGetPath: '__ns__-__lng__.json',
         load: 'All',
         fallbackLng: {

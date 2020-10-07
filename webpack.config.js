@@ -18,7 +18,7 @@ module.exports = {
         devices: getEntrySources(['./src/js/index.js']),
     },
     output: {
-        publicPath: 'http://localhost:8888/',
+        publicPath: '/',
         filename: 'js/[name].js',
         path: path.resolve(__dirname, 'dist'),
     },
@@ -92,6 +92,7 @@ module.exports = {
                 from: 'node_modules/materialize-css/dist/js/materialize.min.js',
                 to: 'js/materialize.js',
             },
+            { from: 'node_modules/materialize-css/dist/fonts', to: 'fonts' },
             { from: 'node_modules/jquery/dist/jquery.min.js', to: 'js/jquery.js' },
             {
                 from: 'node_modules/jquery-i18next/jquery-i18next.min.js',
@@ -113,6 +114,8 @@ module.exports = {
                 MAP_OVERLAY_JSON_ENV:
                     '{path:"images/Layers/Combined.png",corner1:{lat:-20.90974,lng:-48.83651},corner2:{lat:-21.80963,lng:-47.11802},}',
                 GUI_VERSION: JSON.stringify(process.env.GUI_VERSION),
+                BASE_URL: '/',
+                APPLICATION_URL: '/',
             },
         }),
     ],
@@ -124,6 +127,7 @@ module.exports = {
             Stores: path.resolve(__dirname, 'src/js/stores'),
             Views: path.resolve(__dirname, 'src/js/views'),
             Containers: path.resolve(__dirname, 'src/js/containers'),
+            Src: path.resolve(__dirname, 'src/js'),
         },
     },
 };
