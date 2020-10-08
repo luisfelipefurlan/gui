@@ -3,7 +3,6 @@ import { t } from 'i18next';
 import loginManager from 'Comms/login/LoginManager';
 import toaster from 'Comms/util/materialize';
 import { AbilityUtil } from 'Components/permissions/ability';
-import { appURL } from 'Src/config';
 
 const alt = require('../alt');
 
