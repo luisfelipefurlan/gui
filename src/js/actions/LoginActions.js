@@ -7,7 +7,6 @@ import { appURL } from 'Src/config';
 
 const alt = require('../alt');
 
-
 class LoginActions {
     authenticate(login) {
         console.log(appURL);

@@ -1,7 +1,7 @@
 import { baseURL } from 'Src/config';
 import util from '../util';
 
-const GQL_TEMPLATE = templateId => `
+const GQL_TEMPLATE = (templateId) => `
 {
     template(id: ${templateId}) {
       label
@@ -83,7 +83,6 @@ const GQL_TEMPLATE = templateId => `
   }
   `;
 
-
 class TemplateManager {
     getLastTemplates(field) {
         return util.GET(`${baseURL}template?limit=10&sortDsc=${field}`);
@@ -91,7 +90,7 @@ class TemplateManager {
 
     getTemplates(params) {
         if (params) {
-            const qs = Object.keys(params).map(key => `${key}=${params[key]}`).join('&');
+            const qs = Object.keys(params).map((key) => `${key}=${params[key]}`).join('&');
             return util.GET(`${baseURL}template?${qs}`);
         }
         return util.GET(`${baseURL}template`);

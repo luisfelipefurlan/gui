@@ -1,5 +1,5 @@
-import util from '../util/util';
 import { baseURL } from 'Src/config';
+import util from '../util/util';
 
 class ExportManager {
     export() {
