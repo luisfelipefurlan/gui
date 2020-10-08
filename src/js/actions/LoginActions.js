@@ -9,7 +9,6 @@ const alt = require('../alt');
 
 class LoginActions {
     authenticate(login) {
-        console.log(appURL);
         return (dispatch) => {
             dispatch();
             loginManager.authenticate(login)

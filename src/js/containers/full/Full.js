@@ -23,7 +23,6 @@ class Navbar extends Component {
             page_icon: false,
         };
         this.handleClick = this.handleClick.bind(this);
-        this.gravatar = `https://www.gravatar.com/avatar/${btoa(this.props.user.username)}?d=identicon`;
     }
 
     handleClick(e) {
@@ -108,7 +107,6 @@ class RightSideBar extends Component {
         }
 
 
-        // const gravatar = `https://www.gravatar.com/avatar/${btoa(this.props.user.username)}?d=identicon`;
         const { t } = this.props;
         const canSeeImportOrExport = ability.can('modifier', 'import')
             || ability.can('viewer', 'export')
