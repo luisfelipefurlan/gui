@@ -4,7 +4,7 @@ RUN mkdir /data
 WORKDIR /data
 
 #Set the GUI version
-ARG DOJOT_VERSION
+ARG DOJOT_VERSION='undefined'
 
 #It is used to define the API URL
 ARG BASE_URL='/'
