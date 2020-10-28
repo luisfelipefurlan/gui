@@ -1575,10 +1575,23 @@ h1, h2, p {
         }
     }
 
-    .details-card-content {
-        float: left;
+    .details-card {
         height: calc(100% - 40px);
         width: 100%;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-direction: column !important;
+        .details-card-content {
+            flex: 1;
+            display: flex;
+            width: 100%;
+            .details-card-text {
+                color: $subtle;
+                font-size: 200%;
+                font-family: 'Cuprum', sans-serif;
+                margin: auto;
+            }
+        }
     }
 }
 
