@@ -1,12 +1,12 @@
 /* eslint-disable */
-import React, {Component, Fragment} from 'react';
+import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import AltContainer from 'alt-container';
-import {withNamespaces} from 'react-i18next';
+import { withNamespaces } from 'react-i18next';
 import * as i18next from 'i18next';
-import {Loading} from 'Components/Loading';
-import {Attr, HandleGeoElements} from 'Components/HistoryElements';
-import {DojotBtnRedCircle} from 'Components/DojotButton';
+import { Loading } from 'Components/Loading';
+import { Attr, HandleGeoElements } from 'Components/HistoryElements';
+import { DojotBtnRedCircle } from 'Components/DojotButton';
 import MeasureActions from 'Actions/MeasureActions';
 import DeviceActions from 'Actions/DeviceActions';
 import CertificateActions from 'Actions/CertificateActions';
@@ -16,13 +16,13 @@ import ConfigStore from 'Stores/ConfigStore';
 import LoginStore from 'Stores/LoginStore';
 import CertificateStore from 'Stores/CertificateStore';
 import Metadata from './Details/Metadata';
-import {NewPageHeader} from 'Containers/full/PageHeader';
+import { NewPageHeader } from 'Containers/full/PageHeader';
 import util from 'Comms/util/util';
 import socketio from 'socket.io-client';
-import Can from "Components/permissions/Can";
+import Can from 'Components/permissions/Can';
 import Report from './Report';
 
-const DeviceHeader = ({device, t, listAttrDySelected}) => (
+const DeviceHeader = ({ device, t, listAttrDySelected }) => (
     <div className="row devicesSubHeader p0 device-details-header">
         <div className="col s3 m3">
             <span className="col s12 device-label truncate" title={device.label}>
@@ -56,15 +56,15 @@ class Attribute extends Component {
     }
 
     toggleExpand() {
-        const {opened} = this.state;
-        this.setState({opened: !opened});
+        const { opened } = this.state;
+        this.setState({ opened: !opened });
     }
 
     render() {
         // check the current window, if less then 1024px, blocks compressed state
-        const {opened} = this.state;
-        const {device, attr, isStatic} = this.props;
-        const {label, value_type: valueType, metadata, type} = attr;
+        const { opened } = this.state;
+        const { device, attr, isStatic } = this.props;
+        const { label, value_type: valueType, metadata, type } = attr;
         const isOpened = util.checkWidthToStateOpen(opened);
         return (
             <div className={`attributeBox ${isOpened ? 'expanded' : 'compressed'}`}>
@@ -75,11 +75,11 @@ class Attribute extends Component {
                         tabIndex="-1"
                         onKeyUp={this.toggleExpand.bind(this)}
                         onClick={this.toggleExpand.bind(this)}
-                        className={isOpened ?  "fa fa-compress" : "fa fa-expand"}
+                        className={isOpened ? 'fa fa-compress' : 'fa fa-expand'}
                     />
 
                 </div>
-                <div className="details-card-content">
+                <div className="details-card">
                     <AttrHistory
                         device={device}
                         deviceType={type}
@@ -99,7 +99,7 @@ Attribute.propTypes = {
     attr: PropTypes.shape({}).isRequired,
 };
 
-const Configurations = ({t, attrs, device}) => (
+const Configurations = ({ t, attrs, device }) => (
     <div>
         <GenericList
             img="images/gear-dark.png"
@@ -118,7 +118,7 @@ Configurations.propTypes = {
 };
 
 
-const StaticAttributes = ({t, openStaticMap, attrs, device}) => (
+const StaticAttributes = ({ t, openStaticMap, attrs, device }) => (
     <div>
         <GenericList
             img="images/tag.png"
@@ -159,10 +159,11 @@ class GenericList extends Component {
     openMap(attr) {
         let visibleMaps = this.state.visibleMaps;
         //if exists, we should remove it
-        if (visibleMaps.filter(i => i === attr.id).length)
+        if (visibleMaps.filter(i => i === attr.id).length) {
             visibleMaps = visibleMaps.filter(i => i !== attr.id);
-        else
+        } else {
             visibleMaps.push(attr.id);
+        }
 
         const device = this.props.device;
         for (const k in device.attrs) {
@@ -192,15 +193,15 @@ class GenericList extends Component {
                 if (attr.type === 'meta') {
                     // values of configurations
                     if (attr.static_value.length > 20) {
-                        this.setState({truncate: true});
+                        this.setState({ truncate: true });
                     }
                 } else {
                     if (attr.label.length > 20 || attr.value_type > 20) {
-                        this.setState({truncate: true});
+                        this.setState({ truncate: true });
                     }
                     // Values of static attributes
                     if (attr.static_value.length > 20) {
-                        this.setState({truncate: true});
+                        this.setState({ truncate: true });
                     }
                 }
             }
@@ -299,8 +300,9 @@ class GenericList extends Component {
                                         </div>
                                     </div>
                                 </div>
-                                {Object.prototype.hasOwnProperty.call(attr, "metadata") ?
-                                    <div className="line line-meta-btn"><Metadata attr={attr}/></div> : null}
+                                {Object.prototype.hasOwnProperty.call(attr, 'metadata') ?
+                                    <div className="line line-meta-btn"><Metadata attr={attr}/>
+                                    </div> : null}
                                 <hr/>
                             </Fragment>
                         ) : (
@@ -334,8 +336,9 @@ class GenericList extends Component {
                                         </div>
                                     </div>
                                 </div>
-                                {Object.prototype.hasOwnProperty.call(attr, "metadata") ?
-                                    <div className="line line-meta-btn"><Metadata attr={attr}/></div> : null}
+                                {Object.prototype.hasOwnProperty.call(attr, 'metadata') ?
+                                    <div className="line line-meta-btn"><Metadata attr={attr}/>
+                                    </div> : null}
                                 <hr/>
                             </Fragment>
                         )
@@ -358,8 +361,8 @@ class DyAttributeArea extends Component {
     }
 
     toggleAttribute(attr) {
-        let {selectedAttributes: sa} = this.state;
-        const {isAttrsVisible} = this.state;
+        let { selectedAttributes: sa } = this.state;
+        const { isAttrsVisible } = this.state;
         if (isAttrsVisible[attr.id]) {
             sa = sa.filter(attribute => attribute.id !== attr.id);
             delete isAttrsVisible[attr.id];
@@ -368,7 +371,7 @@ class DyAttributeArea extends Component {
             isAttrsVisible[attr.id] = true;
         }
 
-        const {updateListAttrDySelected} = this.props;
+        const { updateListAttrDySelected } = this.props;
 
         updateListAttrDySelected(sa);
 
@@ -380,7 +383,7 @@ class DyAttributeArea extends Component {
     }
 
     render() {
-        const {isAttrsVisible, selectedAttributes} = this.state;
+        const { isAttrsVisible, selectedAttributes } = this.state;
         const {
             openStaticMap, device, t, actuators, dynamicAttrs,
         } = this.props;
@@ -407,15 +410,18 @@ class DyAttributeArea extends Component {
         let atStatic = [];
         if (openStaticMap.length) {
             // we need get the geo-point data for each selected attrs;
-            Object.values(device.attrs).forEach(arry => {
-                arry.forEach(element => {
-                    if (openStaticMap.filter(i =>
-                        element.type === "static"
-                        && element.value_type === "geo:point"
-                        && element.id === i).length === 1) //just found the attr
-                        atStatic.push(element);
-                })
-            });
+            Object.values(device.attrs)
+                .forEach(arry => {
+                    arry.forEach(element => {
+                        if (openStaticMap.filter(i =>
+                            element.type === 'static'
+                            && element.value_type === 'geo:point'
+                            && element.id === i).length === 1) //just found the attr
+                        {
+                            atStatic.push(element);
+                        }
+                    });
+                });
         }
 
         return (
@@ -485,8 +491,8 @@ class ActuatorsList extends Component {
     }
 
     componentWillMount() {
-        const {device} = this.props;
-        const {attrs} = device;
+        const { device } = this.props;
+        const { attrs } = device;
 
         for (const i in attrs) {
             for (const j in attrs[i]) {
@@ -498,12 +504,12 @@ class ActuatorsList extends Component {
     }
 
     clickAttr(attr) {
-        const {toggleAttribute} = this.props;
+        const { toggleAttribute } = this.props;
         toggleAttribute(attr);
     }
 
     render() {
-        const {t, actuators} = this.props;
+        const { t, actuators } = this.props;
         return (
             <div className="stt-attributes dy_attributes">
                 <div className="col s12 header">
@@ -545,7 +551,7 @@ class ActuatorsList extends Component {
                                 </div>
 
                             </div>
-                            {Object.prototype.hasOwnProperty.call(actuator, "metadata") ?
+                            {Object.prototype.hasOwnProperty.call(actuator, 'metadata') ?
                                 <Metadata attr={actuator}/> : null}
                             <hr/>
                         </Fragment>
@@ -568,14 +574,14 @@ ActuatorsList.propTypes = {
 class DynamicAttributeList extends Component {
     constructor(props) {
         super(props);
-        this.state = {truncate: false};
+        this.state = { truncate: false };
         this.clickAttr = this.clickAttr.bind(this);
         this.limitSizeField = this.limitSizeField.bind(this);
     }
 
     componentWillMount() {
-        const {device, attrs: propsAttrs} = this.props;
-        const {attrs} = device;
+        const { device, attrs: propsAttrs } = this.props;
+        const { attrs } = device;
         for (const i in attrs) {
             for (const j in attrs[i]) {
                 if (attrs[i][j].type !== 'meta') {
@@ -593,21 +599,21 @@ class DynamicAttributeList extends Component {
     }
 
     clickAttr(attr) {
-        const {toggleAttribute} = this.props;
+        const { toggleAttribute } = this.props;
         toggleAttribute(attr);
     }
 
     limitSizeField(dyAttrs) {
         dyAttrs.map((dyAttr) => {
             if (dyAttr.label.length > 20) {
-                this.setState({truncate: true});
+                this.setState({ truncate: true });
             }
         });
     }
 
     render() {
-        const {truncate} = this.state;
-        const {t, attrs} = this.props;
+        const { truncate } = this.state;
+        const { t, attrs } = this.props;
         return (
             <div className="stt-attributes dy_attributes">
                 <div className="col s12 header">
@@ -649,7 +655,8 @@ class DynamicAttributeList extends Component {
                                 </div>
 
                             </div>
-                            {Object.prototype.hasOwnProperty.call(attr, "metadata") ? <Metadata attr={attr}/> : null}
+                            {Object.prototype.hasOwnProperty.call(attr, 'metadata') ?
+                                <Metadata attr={attr}/> : null}
                             <hr/>
                         </Fragment>
                     ))}
@@ -667,7 +674,7 @@ DynamicAttributeList.propTypes = {
 };
 
 
-const DeviceUserActions = ({t}) => (
+const DeviceUserActions = ({ t }) => (
     <div>
         <DojotBtnRedCircle
             to="/device/list"
@@ -678,11 +685,11 @@ const DeviceUserActions = ({t}) => (
 );
 
 
-const AttrHistory = ({device, type, attr, metadata, isStatic = false, deviceType}) => {
+const AttrHistory = ({ device, type, attr, metadata, isStatic = false, deviceType }) => {
 
     if (isStatic) {
         //to avoid pass flux containers to a static attribute
-        return <div className="graphLarge">
+        return (
             <Attr
                 device={device}
                 deviceType={deviceType}
@@ -692,25 +699,27 @@ const AttrHistory = ({device, type, attr, metadata, isStatic = false, deviceType
                 metadata={metadata}
                 isStatic={isStatic}
             />
-        </div>
+        );
+
     } else {
-        return <div className="graphLarge">
-            <AltContainer stores={{
-                MeasureStore,
-                Config: ConfigStore,
-            }}
-            >
-                <Attr
-                    device={device}
-                    deviceType={deviceType}
-                    type={type}
-                    attr={attr}
-                    label={attr}
-                    metadata={metadata}
-                    isStatic={isStatic}
-                />
-            </AltContainer>
-        </div>
+        return (
+            <Fragment>
+                <AltContainer stores={{
+                    MeasureStore,
+                    Config: ConfigStore,
+                }}>
+                    <Attr
+                        device={device}
+                        deviceType={deviceType}
+                        type={type}
+                        attr={attr}
+                        label={attr}
+                        metadata={metadata}
+                        isStatic={isStatic}
+                    />
+                </AltContainer>
+            </Fragment>
+        );
     }
 };
 
@@ -733,12 +742,15 @@ class DeviceDetail extends Component {
 
     openStaticMap(updatedList) {
         let openStaticMap = (updatedList.length > 0);
-        this.setState({openStaticMap, listStaticMapOpenned: updatedList});
+        this.setState({
+            openStaticMap,
+            listStaticMapOpenned: updatedList
+        });
     }
 
     render() {
-        const {listStaticMapOpenned} = this.state;
-        const {device, t, updateListAttrDySelected} = this.props;
+        const { listStaticMapOpenned } = this.state;
+        const { device, t, updateListAttrDySelected } = this.props;
         let attr_list = [];
         let dal = [];
         let actuators = [];
@@ -801,11 +813,11 @@ class ViewDeviceImpl extends Component {
     }
 
     updateListAttrDySelected(attrs) {
-        this.setState({listAttrDySelected: attrs});
+        this.setState({ listAttrDySelected: attrs });
     }
 
     componentWillMount() {
-        const {devices, device_id} = this.props;
+        const { devices, device_id } = this.props;
         const device = devices[device_id];
         if (device === undefined) return; // not ready
 
@@ -820,8 +832,8 @@ class ViewDeviceImpl extends Component {
 
     render() {
         let device;
-        const {t, devices} = this.props;
-        const {listAttrDySelected} = this.state;
+        const { t, devices } = this.props;
+        const { listAttrDySelected } = this.state;
 
         if (devices !== undefined) {
             if (devices.hasOwnProperty(this.props.device_id)) {
@@ -957,7 +969,8 @@ class CertificateComponent extends Component {
                                 className={'name-value '}
                                 title={t('certificates:title_ca')}
                             >
-                                {t('certificates:title_ca')} <sub> {t('certificates:down_ca_crt_alt')}</sub>
+                                {t('certificates:title_ca')}
+                                <sub> {t('certificates:down_ca_crt_alt')}</sub>
 
                             </div>
                             <div className="display-flex-no-wrap space-between">
@@ -999,7 +1012,7 @@ class ViewDeviceComponent extends Component {
     constructor(props) {
         super(props);
 
-        const {params} = this.props;
+        const { params } = this.props;
 
         this.socketBaseURL = `${window.location.protocol}//${window.location.host}`;
         this.tokenURL = `${this.socketBaseURL}/stream/socketio`;
@@ -1014,20 +1027,24 @@ class ViewDeviceComponent extends Component {
 
         this.socket.on(`${params.device}`, (data) => {
             MeasureActions.appendMeasures(data);
-        }).on('error', () => {
-            // if the socket was connected, the 'close()' method
-            // will fire the event 'disconnect' and manually reconnect
-            this.socket.close();
+        })
+            .on('error', () => {
+                // if the socket was connected, the 'close()' method
+                // will fire the event 'disconnect' and manually reconnect
+                this.socket.close();
 
-        }).on('connect_error', () => {
-            this.socketReconnection();
+            })
+            .on('connect_error', () => {
+                this.socketReconnection();
 
-        }).on('connect_timeout', () => {
-            this.socketReconnection();
+            })
+            .on('connect_timeout', () => {
+                this.socketReconnection();
 
-        }).on('disconnect', () => {
-            this.socketReconnection();
-        });
+            })
+            .on('disconnect', () => {
+                this.socketReconnection();
+            });
     }
 
     componentWillMount() {
@@ -1049,7 +1066,7 @@ class ViewDeviceComponent extends Component {
             .then((reply) => {
                 selfSocket.io.opts.query = {
                     token: reply.token
-                }
+                };
                 selfSocket.open();
             });
     }
@@ -1076,4 +1093,4 @@ class ViewDeviceComponent extends Component {
 }
 
 const ViewDevice = withNamespaces()(ViewDeviceComponent);
-export {ViewDevice};
+export { ViewDevice };

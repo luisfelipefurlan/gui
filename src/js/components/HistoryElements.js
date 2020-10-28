@@ -5,7 +5,7 @@ import DeviceActions from 'Actions/DeviceActions';
 import FirmwareHelper from '../comms/firmware/FirmwareHelper';
 import util from '../comms/util/util';
 import { SmallPositionRenderer } from 'Views/utils/Maps';
-import { Trans } from 'react-i18next';
+import { t } from 'i18next';
 import LeafMap from '../views/utils/LeafMap';
 
 const CommandFooter = ({ deviceId, attrLabel, deviceType = '' }) => {
@@ -14,14 +14,14 @@ const CommandFooter = ({ deviceId, attrLabel, deviceType = '' }) => {
     const handleClick = () => {
         DeviceActions.triggerActuator(deviceId, { attrs: { [attrLabel]: input } }, () => {
             setInput('');
-        })
-    }
+        });
+    };
     const handleKeyPress = (event) => {
-        if(event.key === 'Enter'){
+        if (event.key === 'Enter') {
             handleClick();
         }
-    }
-    if(deviceType === 'actuator') {
+    };
+    if (deviceType === 'actuator') {
         return (
             <div className={'card-footer-action'}>
                 <input
@@ -41,6 +41,24 @@ const CommandFooter = ({ deviceId, attrLabel, deviceType = '' }) => {
     }
     return null;
 };
+
+const NoData = ({ device, attr, deviceType }) => (
+    <Fragment>
+        <div className="details-card-content">
+            <div className="details-card-text">{t('devices:no_data_received')}</div>
+        </div>
+        <CommandFooter deviceId={device.id} attrLabel={attr} deviceType={deviceType}/>
+    </Fragment>
+);
+
+const NoDataAv = ({ device, attr, deviceType }) => (
+    <Fragment>
+        <div className="details-card-content">
+            <div className="details-card-text">{t('devices:no_data_avaliable')}</div>
+        </div>
+        <CommandFooter deviceId={device.id} attrLabel={attr} deviceType={deviceType}/>
+    </Fragment>
+);
 
 const Graph = (props) => {
 
@@ -114,7 +132,10 @@ const Graph = (props) => {
     };
 
     return (
-        <Line data={data} options={options}/>
+        <div className='graphLarge'>
+            <Line data={data} options={options}/>
+        </div>
+
     );
 };
 
@@ -167,7 +188,8 @@ const HistoryList = (props) => {
                         </div>
                     ))}
                 </div>
-                <CommandFooter deviceId={props.device.id} attrLabel={props.attr} deviceType={props.deviceType}/>
+                <CommandFooter deviceId={props.device.id} attrLabel={props.attr}
+                               deviceType={props.deviceType}/>
             </div>
         );
     } else {
@@ -246,18 +268,6 @@ class HandleGeoElements extends Component {
 
     render() {
 
-        function NoData() {
-            return (
-                <div className="valign-wrapper full-height background-info">
-                    <div className="full-width center">
-                        No position
-                        <br/>
-                        available
-                    </div>
-                </div>
-            );
-        }
-
         if (this.props.device === undefined) {
             return (<NoData/>);
         }
@@ -294,7 +304,7 @@ class HandleGeoElements extends Component {
             geoconfs = {};
         }
 
-        if (validDevices.length == 0) {
+        if (validDevices.length === 0) {
             return <NoData/>;
         } else {
             if (this.props.isStatic) {
@@ -302,7 +312,7 @@ class HandleGeoElements extends Component {
                     <LeafMap point={validDevices[0].sp_value}> </LeafMap>
                 </span>;
             } else {
-                return <span>
+                return (
                     <SmallPositionRenderer
                         showLayersIcons={false}
                         dynamicDevices={validDevices}
@@ -311,7 +321,7 @@ class HandleGeoElements extends Component {
                         showPolyline={false}
                         config={geoconfs}
                     />
-                </span>;
+                );
             }
         }
     }
@@ -330,31 +340,16 @@ const Attr = (props) => {
 
     const Renderer = props.type in known ? known[props.type] : known.default;
 
-    const NoData = () => (
-        <div className="full-height background-info">
-            <div className="full-width flex-self-center"><Trans
-                i18nKey="devices:no_data_received"/></div>
-        </div>
-    )
-
-    const NoDataAv = () => (
-        <div className="full-height background-info">
-            <div className="full-width flex-self-center"><Trans
-                i18nKey="devices:no_data_avaliable"/></div>
-        </div>
-    )
-
-
     if (props.isStatic) {
         return <Renderer {...props} />;
     }
 
     if (!props.MeasureStore.data[props.device.id]) {
-        return  <NoData/>;
+        return <NoData {...props} />;
     }
 
     if (!props.MeasureStore.data[props.device.id][`_${props.attr}`]) {
-        return  <NoDataAv/>;
+        return <NoDataAv {...props} />;
     }
 
     //this is used in firmware update, its just a expect to show the full infos about state and result
