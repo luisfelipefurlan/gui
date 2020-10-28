@@ -75,7 +75,6 @@ class CustomMap extends Component {
     componentDidMount() {
         // create map
         const { zoom } = this.props;
-        console.log('mapId', this.state.mapId);
         this.map = L.map(this.state.mapId, {
             zoom,
             center: [51.505, -0.09],
@@ -303,7 +302,6 @@ class MapSocket extends Component {
     }
 
     componentDidMount() {
-        console.log("MapSocket: componentDidMount:");
         const rsi = this.props.receivedSocketInfo;
         const socketio = require('socket.io-client');
         const target = `${window.location.protocol}//${window.location.host}`;
@@ -316,7 +314,6 @@ class MapSocket extends Component {
                     init(reply.token);
                 })
                 .catch((error) => {
-                    // console.log('Failed!', error);
                 });
         }
 
@@ -326,14 +323,11 @@ class MapSocket extends Component {
                 transports: ['polling'],
             });
             deviceListSocket.on('all', (data) => {
-                // console.log("received socket information:", data);
                 rsi(data);
             });
 
             deviceListSocket.on('error', (data) => {
-                // console.log("socket error", data);
                 if (deviceListSocket !== null) deviceListSocket.close();
-                // getWsToken();
             });
         }
 
@@ -345,7 +339,6 @@ class MapSocket extends Component {
     }
 
     render() {
-        // console.log("MapSocket - Render: ", this.props);
         return null;
     }
 }
@@ -368,7 +361,6 @@ class SmallPositionRenderer extends Component {
     componentDidMount() {
         if (!this.state.loadedLayers) {
             const layers = this.props.config.mapObj;
-            // console.log("I got my layers! ", layers);
             for (const index in layers) {
                 layers[index].isVisible = true;
             }
@@ -444,7 +436,6 @@ class SmallPositionRenderer extends Component {
                 }
             }
         }
-        // console.log("parsedEntries (static and dynamics):", parsedEntries);
 
         return (
             <div className='graphLarge'>
@@ -478,7 +469,6 @@ class LayerBox extends Component {
     }
 
     toggleLayer() {
-        console.log('layerbox: togglelayer: ', this.props.config.id);
         this.props.toggleLayer(this.props.config.id);
         // this.setState({visible: !this.state.visible});
     }
@@ -491,7 +481,6 @@ class LayerBox extends Component {
         const imageOverlay = this.props.config.isVisible ?
             <ImageOverlay opacity={layerOpacity} bounds={layerMapBounds}
                           url={this.props.config.overlay_data.path}/> : null;
-        console.log('imageOverlay', this.props.config);
         return (
             <div className="layer-mr">
                 <div title={this.props.config.description}
