@@ -1,4 +1,4 @@
-FROM node:9.11.2-alpine AS basis
+FROM node:10.23.0-alpine3.10 AS basis
 
 RUN mkdir /data
 WORKDIR /data
